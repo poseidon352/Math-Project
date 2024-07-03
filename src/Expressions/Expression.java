@@ -1,3 +1,5 @@
 package Expressions;
 
-public interface Expression {}
+public interface Expression {
+    Expression simplify();
+}

@@ -1,9 +1,9 @@
 package Expressions;
 
-public class Add extends BasicOperation {
-    
-    public Add(Expression lhs, Expression rhs) {
-        super(lhs, rhs);
+public class Pow extends BasicOperation{
+
+    public Pow(Expression base, Expression exponent) {
+        super(base, exponent);
     }
 
     @Override
