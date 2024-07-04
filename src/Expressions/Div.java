@@ -1,6 +1,6 @@
 package Expressions;
 
-public class Div extends BasicOperation {
+public class Div extends Operator {
     
     public Div(Expression numerator, Expression denominator) {
         super(numerator, denominator);

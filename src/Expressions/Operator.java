@@ -1,10 +1,10 @@
 package Expressions;
 
-public abstract class BasicOperation implements Expression {
+public abstract class Operator implements Expression {
     protected Expression lhs;
     protected Expression rhs;
 
-    public BasicOperation(Expression lhs, Expression rhs) {
+    public Operator(Expression lhs, Expression rhs) {
         this.lhs = lhs;
         this.rhs = rhs;
     }

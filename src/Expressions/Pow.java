@@ -1,6 +1,6 @@
 package Expressions;
 
-public class Pow extends BasicOperation{
+public class Pow extends Operator{
 
     public Pow(Expression base, Expression exponent) {
         super(base, exponent);

@@ -7,6 +7,10 @@ public class Variable implements Expression {
         this.name = name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     @Override
     public Expression simplify() {
         return this;

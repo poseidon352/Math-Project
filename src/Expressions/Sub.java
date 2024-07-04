@@ -1,6 +1,6 @@
 package Expressions;
 
-public class Sub extends BasicOperation {
+public class Sub extends Operator {
     
     public Sub(Expression lhs, Expression rhs) {
         super(lhs, rhs);
