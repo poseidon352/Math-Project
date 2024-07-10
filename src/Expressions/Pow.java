@@ -11,4 +11,9 @@ public class Pow extends Operator{
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'simplify'");
     }
+
+    @Override
+    public String toString() {
+        return lhs.toString() + " ^ " + rhs.toString();
+    }
 }
