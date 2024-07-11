@@ -87,7 +87,7 @@ public class Tokenizer {
     //     while (hasMoreTokens()) {
     //         String next = consume();
     //         if (isNumeric(next)) {
-    //             tokens.add("int");
+    //             tokens.add("num");
     //         } else if (isLetter(next)) {
     //             tokens.add("var");
     //         } else if (isOperator(next)) {

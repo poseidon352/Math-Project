@@ -8,12 +8,28 @@ public class Mul extends Operator {
 
     @Override
     public Expression simplify() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'simplify'");
+        // If the lhs and rhs are both constants then subtract them to produce a new constant
+        if (lhs instanceof Constant && rhs instanceof Constant) {
+            double product = ((Constant) lhs).getValue() - ((Constant) rhs).getValue();
+            return new Constant(product);
+        }
+        return this;
     }
 
     @Override
     public String toString() {
-        return lhs.toString() + " * " + rhs.toString();
+        String lhsString = this.lhs.toString();
+        String rhsString = this.rhs.toString();
+
+        if (lhs instanceof Add || lhs instanceof Sub) {
+            lhsString = "(" + this.lhs.toString() + ")";
+        }
+
+        
+        if (rhs instanceof Add || rhs instanceof Sub) {
+           rhsString = "(" + this.rhs.toString() + ")";
+        }
+
+        return lhsString + " * " + rhsString;
     }
 }

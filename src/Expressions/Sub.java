@@ -8,8 +8,12 @@ public class Sub extends Operator {
 
     @Override
     public Expression simplify() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'simplify'");
+        // If the lhs and rhs are both constants then subtract them to produce a new constant
+        if (lhs instanceof Constant && rhs instanceof Constant) {
+            double difference = ((Constant) lhs).getValue() - ((Constant) rhs).getValue();
+            return new Constant(difference);
+        }
+        return this;
     }
 
     @Override
