@@ -8,13 +8,14 @@ public class Equal extends Operator {
 
     @Override
     public Expression simplify() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'simplify'");
+        lhs = lhs.simplify();
+        rhs = rhs.simplify();
+        return this;
     }
 
     @Override
     public String toString() {
         return lhs.toString() + " = " + rhs.toString();
-    }
+    }    
     
 }

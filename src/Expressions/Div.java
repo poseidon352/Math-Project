@@ -8,9 +8,11 @@ public class Div extends Operator {
 
     @Override
     public Expression simplify() {
+        lhs = lhs.simplify();
+        rhs = rhs.simplify();
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
-            double quotient = ((Constant) lhs).getValue() - ((Constant) rhs).getValue();
+            double quotient = ((Constant) lhs).getValue() / ((Constant) rhs).getValue();
             return new Constant(quotient);
         }
         return this;

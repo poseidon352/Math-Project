@@ -1,6 +1,3 @@
-import java.util.ArrayList;
-import java.util.List;
-
 import Expressions.*;
 
 public class Tokenizer {

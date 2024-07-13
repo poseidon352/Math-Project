@@ -18,6 +18,9 @@ public class Constant implements Expression {
 
     @Override
     public String toString() {
+        if (value % 1 == 0) {
+            return Integer.toString(((int) value));
+        }
         return Double.toString(value);
     }
 }

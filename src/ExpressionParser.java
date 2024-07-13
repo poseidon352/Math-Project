@@ -31,6 +31,7 @@ public class ExpressionParser {
     }
     
       // Operator has Left --> Right associativity
+      // TODO: Check that this is true for * and /
       static boolean hasLeftAssociativity(char ch) {
         if (ch == '+' || ch == '-' || ch == '/' || ch == '*') {
             return true;
@@ -39,90 +40,95 @@ public class ExpressionParser {
         }
     }
   
-    // Method converts  given infix to postfix expression
+    // Method converts  given infix to reverse Polish Noation
     static List<String> infixToRpn(String expression) {
-        // Initialising an empty String
-        // (for output) and an empty stack
+        //Removes any whitespace in the string
+        expression = expression.replaceAll("\\s+","");
         Stack<Character> stack = new Stack<>();
-
-        // Initializing the Stack for the expression that can take multi digit numbers
-        List<String> outputList = new ArrayList<>();
+        List<String> output = new ArrayList<>();
         
 
-        // Iterating over tokens using inbuilt
-        // .length() function
+        // Iterating over tokens in the expression string
         for (int i = 0; i < expression.length(); ++i) {
             // Finding character at 'i'th index
             char c = expression.charAt(i);
+            // If the token is a letter (a variable), then add it to the output
             if (isLetter(c)) {
-                outputList.add(Character.toString(c));
+                output.add(Character.toString(c));
             }
 
+            // If the token is a digit
             else if (isDigit(c)) {
+                // While tokens remain and the next token is still a digit or a decimal point (max one)
+                // add the digits to a string that will be added to the List all at once.
+                // The increment will update the index in the string with the length of the number
+                // TODO: Check that there is at most one decimal point
                 String number = "";
                 int increment = 0;
-                while (i + increment < expression.length() && isDigit(expression.charAt(i + increment))) {
+                while (i + increment < expression.length() 
+                    && (isDigit(expression.charAt(i + increment)) 
+                        || (Character.toString((expression.charAt(i + increment))).equals(".")))) {
                     number += Character.toString(expression.charAt(i + increment));
                     increment++;
                 }
-                outputList.add(number);
+                output.add(number);
                 i += increment - 1;
             }
 
-            // If the scanned Token is an '('
-            // push it to the stack
+            // If the scanned Token is an '(', push it to the stack
             else if (c == '(') {
                 stack.push(c);
             }
 
-            // If the scanned Token is an ')' pop and append
-            // it to output from the stack until an '(' is
-            // encountered
+            // If the scanned Token is an ')' pop and add it to output from 
+            // the stack until an '(' is encountered
             else if (c == ')') {
                 while (!stack.isEmpty() && stack.peek() != '(') {
-                    outputList.add(Character.toString(stack.pop()));
+                    output.add(Character.toString(stack.pop()));
                 }
-
+                // Remove the '(' from the stack
                 stack.pop();
             }
 
-            // If an operator is encountered then taken the
-            // further action based on the precedence of the
-            // operator
-
+            // If an operator is encountered then further action is taken
+            // based on the precedence of the operator
             else {
                 while (!stack.isEmpty()
                         && getPrecedence(c) <= getPrecedence(stack.peek()) 
                         && hasLeftAssociativity(c)) {
-                    outputList.add(Character.toString(stack.pop()));
+                    output.add(Character.toString(stack.pop()));
                 }
                 stack.push(c);
             }
         }
 
-        // pop all the remaining operators from
-        // the stack and append them to output
+        // pop all the remaining operators from the stack and add them to output
         while (!stack.isEmpty()) {
+            // TODO: Throw an error if this happens
             // if (stack.peek() == '(') {
             //     return "This expression is invalid";
             // }
-            outputList.add(Character.toString(stack.pop()));
+            output.add(Character.toString(stack.pop()));
         }
-        return outputList;
+        return output;
     }
 
+    // Checks if a string is a number (can be a decimal number)
     public static boolean isNumeric(String str) {
-        return str.matches("\\d*");
+        return str.matches("\\d*(.\\d+)?");
     }
 
+    // Checks if the string contains a single letter
     public static boolean isLetter(String str) {
         return str.matches("[a-z]");
     }
 
+    // Check if the string contains a single operator or parenthesis
     public static boolean isOperator(String str) {
         return str.matches("[+-/*///^()]");
     }
 
+    // Converts the algebraic expresion from RPN in a list to an Expression
     static Expression rpnToExpression(List<String> rpn) {
     
         Stack<Expression> stack = new Stack<>();
@@ -169,9 +175,14 @@ public class ExpressionParser {
     public static void main(String[] args)
     {
         // Considering random infix string notation
-        String expression = "1+2";
-        Expression expression2 = rpnToExpression(infixToRpn(expression));
+        String expression = "1+6";
+        List<String> rpn = infixToRpn(expression);
+        Expression expression2 = rpnToExpression(rpn);
+        for (String token : rpn) {
+            System.out.print(token + " ");
+        }
+        System.out.println();
         System.out.println(expression2.toString());
-
+        System.out.println(expression2.simplify().toString());
     }
 }

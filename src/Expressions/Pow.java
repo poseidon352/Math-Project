@@ -8,9 +8,11 @@ public class Pow extends Operator{
 
     @Override
     public Expression simplify() {
+        lhs = lhs.simplify();
+        rhs = rhs.simplify();
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
-            double result = ((Constant) lhs).getValue() - ((Constant) rhs).getValue();
+            double result = Math.pow(((Constant) lhs).getValue(), ((Constant) rhs).getValue());
             return new Constant(result);
         }
         return this;
