@@ -41,6 +41,10 @@ public class ExpressionParser {
     }
   
     // Method converts  given infix to reverse Polish Noation
+    /*
+        1. Be able to write multiplication as 2x to represent 2*x
+        2. Be able to read negative numbers
+     */
     static List<String> infixToRpn(String expression) {
         //Removes any whitespace in the string
         expression = expression.replaceAll("\\s+","");
@@ -175,7 +179,7 @@ public class ExpressionParser {
     public static void main(String[] args)
     {
         // Considering random infix string notation
-        String expression = "1+6";
+        String expression = "x-(1-2)";
         List<String> rpn = infixToRpn(expression);
         Expression expression2 = rpnToExpression(rpn);
         for (String token : rpn) {
