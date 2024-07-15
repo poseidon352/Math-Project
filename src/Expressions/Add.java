@@ -15,55 +15,28 @@ public class Add extends Operator {
         if (this.lhs instanceof Constant && this.rhs instanceof Constant) {
             double sum = ((Constant) this.lhs).getValue() + ((Constant) this.rhs).getValue();
             return new Constant(sum);
-        // If the lhs and rhs are both the same Variable then add them to produce a new Mul
-        } else if (this.lhs instanceof Variable && this.rhs instanceof Variable) {
-            // If they are the same variable
-            if (((Variable) this.lhs).equals((Variable) this.rhs)) {
-                return new Mul(new Constant(2), rhs);
-            }
         // If the lhs is a Constant and the rhs is an Operator
-        } else if (this.lhs instanceof Variable && this.rhs instanceof Constant) {
-            return plusMinusSimplification();
-        } else if (constOrVar(lhs) && this.rhs instanceof Operator) {
+        } else if (this.lhs instanceof Constant && this.rhs instanceof Operator) {
             return rhsOperator();
         // If the lhs is an Operator and the rhs is a Constant
-        } else if (this.lhs instanceof Operator && constOrVar(rhs)) {
+        } else if (this.lhs instanceof Operator && this.rhs instanceof Constant) {
             return lhsOperator();
-        }
-        // Otherwise return the simplified Add
-        return this;
-    }
-    
-    // If the rhs is a negative constant then return a Sub operation
-    private Expression plusMinusSimplification() {
-        Double rhsValue = ((Constant) this.rhs).getValue();
-        if (rhsValue < 0) {
-            return (new Sub(lhs, new Constant(rhsValue*(-1)))).simplify();
+        } else if (this.lhs instanceof Operator && this.rhs instanceof Operator) {
+            return lhsOperatorRhsOperator();
         }
         return this;
     }
 
-    // Assuming the lhs is a Constant or Variable, then return the respective method depending
-    // if the rhs is an Add, Sub or Multiply (only if lhs is a Variable)
     private Expression rhsOperator() {
         if (this.rhs instanceof Add) {
-            return rhsAdd().simplify();
+            return simplifyAdd(rhs, lhs).simplify();
         } else if (this.rhs instanceof Sub) {
             return rhsSub().simplify();
-        } else if (this.lhs instanceof Variable && this.rhs instanceof Mul) {
-            return rhsMul().simplify();
-        }
-        return this;
-    }
-
-    private Expression rhsAdd() {
-        Add rhs = (Add) this.rhs;
-        if (lhs.getClass().equals(rhs.getLHS().getClass())) {
-            Expression newLHS = new Add(lhs, rhs.getLHS());
-            return new Add(newLHS, rhs.getRHS());
-        } else if (lhs.getClass().equals(rhs.getRHS().getClass())) {
-            Expression newRHS = new Add (lhs, rhs.getRHS());
-            return new Add(rhs.getLHS(), newRHS);
+        // } else if (this.lhs instanceof Variable && this.rhs instanceof Mul) {
+        //     return simplifyMul(rhs, lhs).simplify(); //TODO: remove this if no problems occur
+        //TODO: Check if there is a way to abstract the below code with the other +0 code in the basicSimplification method
+        } else if (this.lhs instanceof Constant && ((Constant) this.lhs).getValue() == 0) {
+            return this.rhs;
         }
         return this;
     }
@@ -80,40 +53,25 @@ public class Add extends Operator {
         return this;
     }
 
-    // Assuming that LHS is a Variable and RHS is a Mul
-    private Expression rhsMul() {
-        Mul rhs = (Mul) this.rhs;
-        if (rhs.getLHS() instanceof Constant && rhs.getRHS() instanceof Variable) {
-            if (lhs.equals(rhs.getRHS())) {
-                return new Mul(new Constant(((Constant) rhs.getLHS()).getValue() + 1), lhs);
-            }
-        } else if (rhs.getLHS() instanceof Variable && rhs.getRHS() instanceof Constant) {
-            if (lhs.equals(rhs.getLHS())) {
-                return new Mul(new Constant(((Constant) rhs.getRHS()).getValue() + 1), lhs);
-            }
-        }
-        return this;
-    }
-
     private Expression lhsOperator() {
         if (this.lhs instanceof Add) {
-            return lhsAdd().simplify();
+            return simplifyAdd(lhs, rhs).simplify();
         } else if (this.lhs instanceof Sub) {
             return lhsSub().simplify();
-        } else if (this.lhs instanceof Mul && this.rhs instanceof Variable) {
-            return lhsMul().simplify();
+        // } else if (this.lhs instanceof Mul && this.rhs instanceof Variable) {
+        //     return simplifyMul(lhs, rhs).simplify(); //TODO: remove this if no problems occur
+        } else if (this.rhs instanceof Constant) {
+            return basicSimplification();
         }
         return this;
     }
 
-    private Expression lhsAdd() {
-        Add lhs = (Add) this.lhs;
-        if (rhs.getClass().equals(lhs.getRHS().getClass())) {
-            Expression newRHS = new Add(rhs, lhs.getRHS());
-            return new Add(newRHS, lhs.getLHS());
-        } else if (rhs.getClass().equals(lhs.getLHS().getClass())) {
-            Expression newLHS = new Add (rhs, lhs.getLHS());
-            return new Add(newLHS, lhs.getRHS());
+    private Expression basicSimplification() {
+        double rhsValue = ((Constant) this.rhs).getValue();
+        if (rhsValue < 0) {
+            return (new Sub(lhs, new Constant(rhsValue*(-1))));
+        } else if (rhsValue == 0) {
+            return this.lhs;
         }
         return this;
     }
@@ -133,23 +91,115 @@ public class Add extends Operator {
         return this;
     }
 
-    private Expression lhsMul() {
-        Mul lhs = (Mul) this.lhs;
-        if (lhs.getRHS() instanceof Constant && lhs.getLHS() instanceof Variable) {
-            if (rhs.equals(lhs.getLHS())) {
-                return new Mul(new Constant(((Constant) lhs.getRHS()).getValue() + 1), rhs);
-            }
-        } else if (lhs.getRHS() instanceof Variable && lhs.getLHS() instanceof Constant) {
-            if (rhs.equals(lhs.getRHS())) {
-                return new Mul(new Constant(((Constant) lhs.getLHS()).getValue() + 1), rhs);
+    private Expression simplifyAdd(Expression firstExpr, Expression secondExpr) {
+        if (firstExpr instanceof Add) {
+            Add firstAdd = (Add) firstExpr;
+            if (secondExpr.getClass().equals(firstAdd.getRHS().getClass())) {
+                Expression newExpr = new Add(secondExpr, firstAdd.getRHS());
+                return new Add(newExpr, firstAdd.getLHS());
+            } else if (secondExpr.getClass().equals(firstAdd.getLHS().getClass())) {
+                Expression newExpr = new Add(secondExpr, firstAdd.getLHS());
+                return new Add(newExpr, firstAdd.getRHS());
+            } else {
+                return simplifyAddAddMul(firstExpr, secondExpr);
             }
         }
         return this;
     }
 
-    private static boolean constOrVar(Expression expr) {
-        return (expr instanceof Constant || expr instanceof Variable);
+    // Assuming firstExpr is an Add
+    private Expression simplifyAddAddMul(Expression firstExpr, Expression secondExpr) {
+        Add firstAdd = (Add) firstExpr;
+        if (firstAdd.getLHS() instanceof Constant) {
+            return new Add(new Add(secondExpr, firstAdd.getRHS()), firstAdd.getLHS());
+        } else if (firstAdd.getRHS() instanceof Constant) {
+            return new Add(new Add(secondExpr, firstAdd.getLHS()), firstAdd.getRHS());
+        }
+        return this;
     }
+
+    private Expression simplifyMul(Expression firstExpr, Expression secondExpr) {
+        Mul firstMulExpr = (Mul) firstExpr;
+        Mul secondMulExpr = (Mul) secondExpr;
+        int multiplicationOfSecondMul = 1;
+        Variable secondExprVariable = null;
+
+        if (secondMulExpr.getLHS() instanceof Constant) {
+            multiplicationOfSecondMul = (int) ((Constant) secondMulExpr.getLHS()).getValue();
+            secondExprVariable = (Variable) secondMulExpr.getRHS();
+        } else if (secondMulExpr.getRHS() instanceof Constant) {
+            multiplicationOfSecondMul = (int) ((Constant) secondMulExpr.getRHS()).getValue();
+            secondExprVariable = (Variable) secondMulExpr.getLHS();
+        }
+        if (firstMulExpr.getRHS() instanceof Constant && firstMulExpr.getLHS() instanceof Variable) {
+            if (secondExprVariable.equals(firstMulExpr.getLHS())) {
+                return new Mul(new Constant(((Constant) firstMulExpr.getRHS()).getValue() + multiplicationOfSecondMul), secondExprVariable);
+            }
+        } else if (firstMulExpr.getRHS() instanceof Variable && firstMulExpr.getLHS() instanceof Constant) {
+            if (secondExprVariable.equals(firstMulExpr.getRHS())) {
+                return new Mul(new Constant(((Constant) firstMulExpr.getLHS()).getValue() + multiplicationOfSecondMul), secondExprVariable);
+            }
+        }
+        return this;
+    }
+
+    /****************************************************************************
+    //                               LHS && RHS Operator
+    *****************************************************************************/
+
+    // These methods will reorder the expression so that the above rules can be 
+    // directly followed
+    private Expression lhsOperatorRhsOperator() {
+        if (this.lhs instanceof Add) {
+            return addExprSimplification(lhs, rhs).simplify();
+        } else if (this.rhs instanceof Add) {
+            return addExprSimplification(rhs, lhs).simplify();
+        } else if (this.lhs instanceof Sub) {
+            return lhsSubRhsOperator().simplify();
+        } else if (this.rhs instanceof Sub) {
+            return lhsOperatorRhsSub().simplify();
+        } else if (this.lhs instanceof Mul && this.rhs instanceof Mul) {
+            return simplifyMul(lhs, rhs);
+        }
+        return this;
+    }
+
+    private Expression addExprSimplification(Expression firstExpr, Expression secondExpr) {
+        if (firstExpr instanceof Add) {
+            Add addExpr = (Add) firstExpr;
+            if (addExpr.getLHS() instanceof Constant) {
+                return new Add(new Add(addExpr.getRHS(), secondExpr), addExpr.getLHS());
+            } else if (addExpr.getRHS() instanceof Constant) {
+                return new Add(new Add(addExpr.getLHS(), secondExpr), addExpr.getRHS());
+            }
+        }
+        return this;
+    }
+
+    private Expression lhsSubRhsOperator() {
+        Sub lhs = (Sub) this.lhs;
+        if (lhs.getLHS() instanceof Constant && lhs.getRHS() instanceof Variable) {
+            return new Add(lhs.getLHS(), new Sub(this.rhs, lhs.getRHS()));
+        } else if (lhs.getLHS() instanceof Variable && lhs.getRHS() instanceof Constant) {
+            return new Sub(new Add(lhs.getLHS(), this.rhs), lhs.getRHS());
+        }
+        return this;
+    }
+
+    private Expression lhsOperatorRhsSub() {
+        Sub rhs = (Sub) this.rhs;
+        if (rhs.getLHS() instanceof Constant && rhs.getRHS() instanceof Variable) {
+            return new Add(rhs.getLHS(), new Sub(this.lhs, rhs.getRHS()));
+        } else if (rhs.getLHS() instanceof Variable && rhs.getRHS() instanceof Constant) {
+            return new Sub(new Add(this.lhs, rhs.getLHS()), rhs.getRHS());
+        }
+        return this;
+    }
+
+
+    // private static boolean constOrVar(Expression expr) {
+    //     return (expr instanceof Constant || expr instanceof Variable);
+    // } //TODO: remove if no problems occur
 
     @Override
     public String toString() {

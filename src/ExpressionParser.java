@@ -3,6 +3,7 @@ import java.util.List;
 import java.util.Stack;
 
 import Expressions.*;
+import Exceptions.*;
 
 import java.lang.Character;
 
@@ -20,14 +21,15 @@ public class ExpressionParser {
     // value will be returned
     static int getPrecedence(char ch) {
 
-        if (ch == '+' || ch == '-')
+        if (ch == '+' || ch == '-') {
             return 1;
-        else if (ch == '*' || ch == '/')
+        } else if (ch == '*' || ch == '/') {
             return 2;
-        else if (ch == '^')
+        } else if (ch == '^') {
             return 3;
-        else
+        } else {
             return -1;
+        }
     }
     
       // Operator has Left --> Right associativity
@@ -133,7 +135,7 @@ public class ExpressionParser {
     }
 
     // Converts the algebraic expresion from RPN in a list to an Expression
-    static Expression rpnToExpression(List<String> rpn) {
+    static Expression rpnToExpression(List<String> rpn) throws UnknownSymbolException {
     
         Stack<Expression> stack = new Stack<>();
 
@@ -143,8 +145,13 @@ public class ExpressionParser {
             if (isNumeric(c)) {
                 stack.push(new Constant(Double.parseDouble(c)));
             } else if (isLetter(c)) {
-                stack.push(new Variable(c));
-            } else if (isOperator(c)) {
+                boolean pushDirectVariable = rpn.size() > i + 2 && (rpn.get(i+1).equals("*") || rpn.get(i+2).equals("*"));
+                if (pushDirectVariable) {
+                    stack.push(new Variable(c));
+                } else {
+                    stack.push(new Mul(new Constant(1), new Variable(c)));
+                }
+            } else {
                 parseOperator(stack, c);
             }
         }
@@ -152,7 +159,7 @@ public class ExpressionParser {
         return stack.pop();
     }
 
-    static void parseOperator(Stack<Expression> stack, String c) {
+    static void parseOperator(Stack<Expression> stack, String c) throws UnknownSymbolException {
         Expression rhs = stack.pop();
         Expression lhs = stack.pop();
         switch (c) {
@@ -172,19 +179,18 @@ public class ExpressionParser {
                 stack.push(new Pow(lhs, rhs));
                 break;
             default:
-                // TODO: create exception
-                break;
+                throw new UnknownSymbolException();
         }
     }
-    public static void main(String[] args)
+    public static void main(String[] args) throws UnknownSymbolException
     {
         // Considering random infix string notation
-        String expression = "x-(1-2)";
+        String expression = "0+x";
         List<String> rpn = infixToRpn(expression);
-        Expression expression2 = rpnToExpression(rpn);
         for (String token : rpn) {
             System.out.print(token + " ");
         }
+        Expression expression2 = rpnToExpression(rpn);
         System.out.println();
         System.out.println(expression2.toString());
         System.out.println(expression2.simplify().toString());

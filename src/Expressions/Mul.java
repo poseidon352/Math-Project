@@ -20,18 +20,24 @@ public class Mul extends Operator {
 
     @Override
     public String toString() {
+
+        if (this.lhs instanceof Constant && ((Constant) this.lhs).getValue() == 1) {
+            return this.rhs.toString();
+        } else if (this.rhs instanceof Constant && ((Constant) this.rhs).getValue() == 1) {
+            return this.lhs.toString();
+        }
+
         String lhsString = this.lhs.toString();
-        String rhsString = this.rhs.toString();
+            String rhsString = this.rhs.toString();
 
-        if (lhs instanceof Add || lhs instanceof Sub) {
-            lhsString = "(" + this.lhs.toString() + ")";
-        }
+            if (lhs instanceof Add || lhs instanceof Sub) {
+                lhsString = "(" + this.lhs.toString() + ")";
+            }
 
-        
-        if (rhs instanceof Add || rhs instanceof Sub) {
-           rhsString = "(" + this.rhs.toString() + ")";
-        }
-
-        return lhsString + rhsString;
+            
+            if (rhs instanceof Add || rhs instanceof Sub) {
+            rhsString = "(" + this.rhs.toString() + ")";
+            }
+            return lhsString + rhsString;
     }
 }
