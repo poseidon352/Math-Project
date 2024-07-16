@@ -32,10 +32,8 @@ public class ExpressionParser {
         }
     }
     
-      // Operator has Left --> Right associativity
-      // TODO: Check that this is true for * and /
       static boolean hasLeftAssociativity(char ch) {
-        if (ch == '+' || ch == '-' || ch == '/' || ch == '*') {
+        if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
             return true;
         } else {
             return false;
@@ -43,7 +41,7 @@ public class ExpressionParser {
     }
   
     // Method converts  given infix to reverse Polish Noation
-    /*
+    /* TODO:
         1. Be able to write multiplication as 2x to represent 2*x
         2. Be able to read negative numbers
      */
@@ -145,17 +143,11 @@ public class ExpressionParser {
             if (isNumeric(c)) {
                 stack.push(new Constant(Double.parseDouble(c)));
             } else if (isLetter(c)) {
-                boolean pushDirectVariable = rpn.size() > i + 2 && (rpn.get(i+1).equals("*") || rpn.get(i+2).equals("*"));
-                if (pushDirectVariable) {
-                    stack.push(new Variable(c));
-                } else {
-                    stack.push(new Mul(new Constant(1), new Variable(c)));
-                }
+                stack.push(new Mul(new Constant(1), new Pow(new Variable(c), new Constant(1))));
             } else {
                 parseOperator(stack, c);
             }
         }
-
         return stack.pop();
     }
 
@@ -167,7 +159,7 @@ public class ExpressionParser {
                 stack.push(new Add(lhs, rhs));
                 break;
             case "-":
-                stack.push(new Sub(lhs, rhs));
+                stack.push(new Add(lhs, new Mul(new Constant(-1), rhs)));
                 break;
             case "*":
                 stack.push(new Mul(lhs, rhs));
@@ -183,9 +175,10 @@ public class ExpressionParser {
         }
     }
     public static void main(String[] args) throws UnknownSymbolException
-    {
-        // Considering random infix string notation
-        String expression = "0+x";
+    {   
+        long start = System.currentTimeMillis();
+
+        String expression = "x";
         List<String> rpn = infixToRpn(expression);
         for (String token : rpn) {
             System.out.print(token + " ");
@@ -194,5 +187,8 @@ public class ExpressionParser {
         System.out.println();
         System.out.println(expression2.toString());
         System.out.println(expression2.simplify().toString());
+
+        long end = System.currentTimeMillis();
+        System.out.println("Time: " + (end - start) + "ms");
     }
 }

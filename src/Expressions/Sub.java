@@ -15,10 +15,12 @@ public class Sub extends Operator {
             double difference = ((Constant) lhs).getValue() - ((Constant) rhs).getValue();
             return new Constant(difference);
         } else if (this.lhs instanceof Constant && this.rhs instanceof Operator) {
-            return lhsConstantRhsOperator().simplify();
+            return rhsOperator();
         // If the lhs is an Operator and the rhs is a Constant
         } else if (this.lhs instanceof Operator && this.rhs instanceof Constant) {
-            return lhsOperatorRhsConstant().simplify();
+            return lhsOperator();
+        } else if (this.lhs instanceof Operator && this.rhs instanceof Operator) {
+            return lhsOperatorRhsOperator();
         }
         return doubleNegativeSimplification();
     }
@@ -34,27 +36,38 @@ public class Sub extends Operator {
         return this;
     }
 
-    private Expression lhsConstantRhsOperator() {
+    private Expression rhsOperator() {
         if (this.rhs instanceof Add) {
-            return lhsConstantRhsAdd().simplify();
+            return simplifyAdd(rhs, lhs).simplify();
         } else if (this.rhs instanceof Sub) {
-
+            // return rhsSub().simplify();
+        } else if (this.lhs instanceof Constant && ((Constant) this.lhs).getValue() == 0) {
+            return this.rhs;
         }
         return this;
     }
 
-    private Expression lhsConstantRhsAdd() {
-        
+    private Expression simplifyAdd(Expression firstExpr, Expression secondExpr) {
         return this;
     }
 
-    private Expression lhsOperatorRhsConstant() {
+    private Expression lhsOperator() {
+        return this;
+    }
+
+    private Expression lhsOperatorRhsOperator() {
         return this;
     }
 
 
     @Override
     public String toString() {
-        return lhs.toString() + " - " + rhs.toString();
+        String lhsString = this.lhs.toString();
+        String rhsString = this.rhs.toString();
+
+        if (rhs instanceof Add || rhs instanceof Sub) {
+            rhsString = "(" + this.rhs.toString() + ")";
+            }
+        return lhsString + " - " + rhsString;
     }
 }
