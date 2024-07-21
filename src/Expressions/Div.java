@@ -8,8 +8,10 @@ public class Div extends Operator {
 
     @Override
     public Expression simplify() {
+        simplifyCancel();
         lhs = lhs.simplify();
         rhs = rhs.simplify();
+        simplifyCancel();
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
             double quotient = ((Constant) lhs).getValue() / ((Constant) rhs).getValue();
@@ -20,6 +22,22 @@ public class Div extends Operator {
             return lhsOperator();
         }
         return this;
+    }
+
+    private void simplifyCancel() {
+        if (this.lhs.equals(this.rhs)) {
+            this.lhs = new Constant(1);
+            this.rhs = new Constant(1);
+        } else if (this.lhs instanceof Mul) {
+            Mul lhs = (Mul) this.lhs;
+            if (lhs.getLHS().equals(rhs)) {
+                this.lhs = lhs.getRHS();
+                this.rhs = new Constant(1);
+            } else if (lhs.getRHS().equals(rhs)) {
+                this.lhs = lhs.getLHS();
+                this.rhs = new Constant(1);
+            }
+        }
     }
 
     private Expression rhsOperator() {

@@ -21,19 +21,21 @@ public class ExpressionParser {
     // value will be returned
     static int getPrecedence(char ch) {
 
-        if (ch == '+' || ch == '-') {
+        if (ch == '=') {
             return 1;
-        } else if (ch == '*' || ch == '/') {
+        }else if (ch == '+' || ch == '-') {
             return 2;
-        } else if (ch == '^') {
+        } else if (ch == '*' || ch == '/') {
             return 3;
+        } else if (ch == '^') {
+            return 4;
         } else {
             return -1;
         }
     }
     
       static boolean hasLeftAssociativity(char ch) {
-        if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+        if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '=') {
             return true;
         } else {
             return false;
@@ -41,9 +43,7 @@ public class ExpressionParser {
     }
   
     // Method converts  given infix to reverse Polish Noation
-    /* TODO:
-        1. Be able to write multiplication as 2x to represent 2*x
-        2. Be able to read negative numbers
+    /* TODO: Be able to write multiplication as 2x to represent 2*x
      */
     static List<String> infixToRpn(String expression) {
         //Removes any whitespace in the string
@@ -61,18 +61,23 @@ public class ExpressionParser {
                 output.add(Character.toString(c));
             }
 
-            // If the token is a digit
-            else if (isDigit(c)) {
-                // While tokens remain and the next token is still a digit or a decimal point (max one)
-                // add the digits to a string that will be added to the List all at once.
-                // The increment will update the index in the string with the length of the number
-                // TODO: Check that there is at most one decimal point
-                String number = "";
-                int increment = 0;
+            else if (isDigit(c) || (c == '-' && (i == 0 || !isDigit(expression.charAt(i - 1)) && expression.charAt(i - 1) != ')'))) {
+                // Initialize the number string, possibly with a minus sign
+                String number = (c == '-') ? "-" : "";
+                int increment = (c == '-') ? 1 : 0; // Start increment at 1 if the first character is a minus sign
+            
+                // Check for a decimal point in the number
+                boolean decimalFound = false;
+            
                 while (i + increment < expression.length() 
                     && (isDigit(expression.charAt(i + increment)) 
-                        || (Character.toString((expression.charAt(i + increment))).equals(".")))) {
-                    number += Character.toString(expression.charAt(i + increment));
+                        || expression.charAt(i + increment) == '.')) {
+                    // Ensure only one decimal point is in the number
+                    if (expression.charAt(i + increment) == '.') {
+                        if (decimalFound) break; // Break if a second decimal point is found
+                        decimalFound = true;
+                    }
+                    number += expression.charAt(i + increment);
                     increment++;
                 }
                 output.add(number);
@@ -165,10 +170,14 @@ public class ExpressionParser {
                 stack.push(new Mul(lhs, rhs));
                 break;
             case "/":
-                stack.push(new Div(lhs, rhs));
+                // stack.push(new Div(lhs, rhs));
+                stack.push(new Mul(lhs, new Pow(rhs, new Constant(-1))));
                 break;
             case "^":
                 stack.push(new Pow(lhs, rhs));
+                break;
+            case "=":
+                stack.push(new Equal(lhs, rhs));
                 break;
             default:
                 throw new UnknownSymbolException();
@@ -178,7 +187,7 @@ public class ExpressionParser {
     {   
         long start = System.currentTimeMillis();
 
-        String expression = "x";
+        String expression = "";
         List<String> rpn = infixToRpn(expression);
         for (String token : rpn) {
             System.out.print(token + " ");

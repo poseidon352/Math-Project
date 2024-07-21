@@ -17,6 +17,17 @@ public class Constant implements Expression {
     }
 
     @Override
+    public boolean hasVariable() {
+        return false;
+    }
+
+    @Override
+    public boolean isVariable() {
+        return false;
+    }
+
+
+    @Override
     public String toString() {
         if (value % 1 == 0) {
             return Integer.toString(((int) value));

@@ -17,6 +17,16 @@ public class Variable implements Expression {
     }
 
     @Override
+    public boolean hasVariable() {
+        return true;
+    }
+
+    @Override
+    public boolean isVariable() {
+        return true;
+    }
+
+    @Override
     public String toString() {
         return name;
     }

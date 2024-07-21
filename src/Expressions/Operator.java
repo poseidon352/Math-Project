@@ -18,6 +18,38 @@ public abstract class Operator implements Expression {
     }
 
     @Override
+    public boolean hasVariable() {
+        if (lhs.hasVariable() || rhs.hasVariable()) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isVariable() {
+        if (this instanceof Mul) {
+            Mul object = (Mul) this;
+            if (object.getLHS() instanceof Pow && object.getRHS().equals(new Constant(1))) {
+                Pow objectLhs = (Pow) object.getLHS();
+                if (objectLhs.getLHS() instanceof Variable && objectLhs.getRHS().equals(new Constant(1))) {
+                    return true;
+                }
+            } else if (object.getRHS() instanceof Pow && object.getLHS().equals(new Constant(1))) {
+                Pow objectRhs = (Pow) object.getRHS();
+                if (objectRhs.getLHS() instanceof Variable && objectRhs.getRHS().equals(new Constant(1))) {
+                    return true;
+                }
+            }
+        } else if (this instanceof Pow) {
+            Pow object = (Pow) this;
+            if (object.getLHS() instanceof Variable && object.getRHS().equals(new Constant(1))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -46,7 +78,5 @@ public abstract class Operator implements Expression {
         } else if (!rhs.equals(other.rhs))
             return false;
         return true;
-    }
-
-    
+    }  
 }

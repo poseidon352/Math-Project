@@ -27,63 +27,59 @@ public class Add extends Operator {
         return this;
     }
 
+    // If the lhs is a Constant and the rhs is an Operator
     private Expression rhsOperator() {
         if (this.rhs instanceof Add) {
-            return simplifyAdd(rhs, lhs).simplify();
-        //TODO: Check if there is a way to abstract the below code with the other +0 code in the basicSimplification method
-        } else if (((Constant) this.lhs).getValue() == 0) {
-            return this.rhs;
+            return simplifyAdd((Add) rhs, lhs).simplify();
+        // If the constant value is 0 then return rhs
         }
-        return this;
+        return basicSimplification((Constant) lhs, rhs);
     }
 
+    // If the lhs is an Operator and the rhs is a Constant
     private Expression lhsOperator() {
         if (this.lhs instanceof Add) {
-            return simplifyAdd(lhs, rhs).simplify();
+            return simplifyAdd((Add) lhs, rhs).simplify();
         } 
-        return basicSimplification();
+        return basicSimplification((Constant) rhs, lhs);
     }
 
-    private Expression basicSimplification() {
-        double rhsValue = ((Constant) this.rhs).getValue();
-        /*  if (rhsValue < 0) {
-             return (new Sub(lhs, new Constant(rhsValue*(-1))));
-        } else */ if (rhsValue == 0) {
-            return this.lhs;
+    // If the constant value is 0 then return the other side of the Add
+    private Expression basicSimplification(Constant constant, Expression expression) {
+        if (constant.getValue() == 0) {
+            return expression;
         }
         return this;
     }
 
-    private Expression simplifyAdd(Expression firstExpr, Expression secondExpr) {
-        Add firstAdd = (Add) firstExpr;
-        if (secondExpr.getClass().equals(firstAdd.getRHS().getClass())) {
-            return new Add(new Add(secondExpr, firstAdd.getRHS()), firstAdd.getLHS());
-        } else if (secondExpr.getClass().equals(firstAdd.getLHS().getClass())) {
-            return new Add(new Add(secondExpr, firstAdd.getLHS()), firstAdd.getRHS());
+    // Will reorder the expression if needed, ex. (x+1)+2 --> x+(1+2)
+    private Expression simplifyAdd(Add addExpr, Expression secondExpr) {
+        if (secondExpr.getClass().equals(addExpr.getRHS().getClass())) {
+            return new Add(new Add(secondExpr, addExpr.getRHS()), addExpr.getLHS());
+        } else if (secondExpr.getClass().equals(addExpr.getLHS().getClass())) {
+            return new Add(new Add(secondExpr, addExpr.getLHS()), addExpr.getRHS());
         }
         return this;
     }
 
-    private Expression lhsMulRhsMul(Expression firstExpr, Expression secondExpr) {
-        Mul firstMulExpr = (Mul) firstExpr;
-        Mul secondMulExpr = (Mul) secondExpr;
+    private Expression lhsMulRhsMul(Mul firstExpr, Mul secondExpr) {
         int multiplicationOfSecondMul = 1;
         Pow secondExprPow = null;
 
-        if (secondMulExpr.getLHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondMulExpr.getLHS()).getValue();
-            secondExprPow = (Pow) secondMulExpr.getRHS();
-        } else if (secondMulExpr.getRHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondMulExpr.getRHS()).getValue();
-            secondExprPow = (Pow) secondMulExpr.getLHS();
+        if (secondExpr.getLHS() instanceof Constant) {
+            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getLHS()).getValue();
+            secondExprPow = (Pow) secondExpr.getRHS();
+        } else if (secondExpr.getRHS() instanceof Constant) {
+            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getRHS()).getValue();
+            secondExprPow = (Pow) secondExpr.getLHS();
         }
-        if (firstMulExpr.getRHS() instanceof Constant && firstMulExpr.getLHS() instanceof Pow) {
-            if (secondExprPow.equals(firstMulExpr.getLHS())) {
-                return new Mul(new Constant(((Constant) firstMulExpr.getRHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
+        if (firstExpr.getRHS() instanceof Constant && firstExpr.getLHS() instanceof Pow) {
+            if (secondExprPow.equals(firstExpr.getLHS())) {
+                return new Mul(new Constant(((Constant) firstExpr.getRHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
             }
-        } else if (firstMulExpr.getRHS() instanceof Pow && firstMulExpr.getLHS() instanceof Constant) {
-            if (secondExprPow.equals(firstMulExpr.getRHS())) {
-                return new Mul(new Constant(((Constant) firstMulExpr.getLHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
+        } else if (firstExpr.getRHS() instanceof Pow && firstExpr.getLHS() instanceof Constant) {
+            if (secondExprPow.equals(firstExpr.getRHS())) {
+                return new Mul(new Constant(((Constant) firstExpr.getLHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
             }
         }
         return this;
@@ -94,17 +90,16 @@ public class Add extends Operator {
     // directly followed
     private Expression lhsOperatorRhsOperator() {
         if (this.lhs instanceof Add) {
-            return addExprSimplification(lhs, rhs).simplify();
+            return addExprSimplification((Add) lhs, rhs).simplify();
         } else if (this.rhs instanceof Add) {
-            return addExprSimplification(rhs, lhs).simplify();
+            return addExprSimplification((Add) rhs, lhs).simplify();
         } else if (this.lhs instanceof Mul && this.rhs instanceof Mul) {
-            return lhsMulRhsMul(lhs, rhs);
+            return lhsMulRhsMul((Mul) lhs, (Mul) rhs);
         }
         return this;
     }
 
-    private Expression addExprSimplification(Expression firstExpr, Expression secondExpr) {
-        Add addExpr = (Add) firstExpr;
+    private Expression addExprSimplification(Add addExpr, Expression secondExpr) {
         if (addExpr.getLHS() instanceof Constant) {
             return new Add(new Add(addExpr.getRHS(), secondExpr), addExpr.getLHS());
         } else if (addExpr.getRHS() instanceof Constant) {
@@ -122,5 +117,32 @@ public class Add extends Operator {
             return (new Add(rhs, lhs)).toString();
         }
         return lhs.toString() + " + " + rhs.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((lhs == null) ? 0 : lhs.hashCode());
+        result = prime * result + ((rhs == null) ? 0 : rhs.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Add other = (Add) obj;
+        if (lhs == null || rhs == null) {
+            return false;
+        } else if ((!lhs.equals(other.lhs) || !rhs.equals(other.rhs)) &&
+                    (!lhs.equals(other.rhs) || !rhs.equals(other.lhs))) {
+            return false;
+        }
+        return true;
     }
 }
