@@ -1,6 +1,10 @@
-package Expressions;
+package Expressions.Operators;
 
-public class Div extends Operator {
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Function;
+
+public class Div extends Operator implements Function {
     
     public Div(Expression numerator, Expression denominator) {
         super(numerator, denominator);
@@ -55,6 +59,16 @@ public class Div extends Operator {
             return lhs;
         }
         return this;
+    }
+
+    @Override
+    public Expression derivative() {
+        throw new UnsupportedOperationException("Method not yet implemented");
+    }
+
+    @Override
+    public Expression image(double x) {
+        throw new UnsupportedOperationException("Method not yet implemented");
     }
 
 

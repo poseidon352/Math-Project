@@ -1,6 +1,11 @@
-package Expressions;
+package Expressions.Operators;
 
-public class Pow extends Operator{
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Variable;
+import Expressions.Function;
+
+public class Pow extends Operator implements Function {
 
     public Pow(Expression base, Expression exponent) {
         super(base, exponent);
@@ -51,6 +56,21 @@ public class Pow extends Operator{
     }
 
     @Override
+    public Expression derivative() {
+        if (rhs instanceof Constant) {
+            return new Mul(rhs, new Pow(lhs, new Constant(((Constant) rhs).getValue() - 1)));
+        }
+        return this;
+    }
+
+    @Override
+    public Expression image(double x) {
+        return (new Pow(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
+    }
+
+
+    // TODO: update to add parentheses around negative numbers
+    @Override
     public String toString() {
         if (this.rhs instanceof Constant && ((Constant) this.rhs).getValue() == 1){
             return this.lhs.toString();
@@ -58,7 +78,7 @@ public class Pow extends Operator{
         String lhsString = this.lhs.toString();
         String rhsString = this.rhs.toString();
 
-        if (!(lhs instanceof Constant || lhs instanceof Variable)) {
+        if (!(lhs instanceof Constant || lhs.isVariable())) {
             lhsString = "(" + this.lhs.toString() + ")";
         }
 

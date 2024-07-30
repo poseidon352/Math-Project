@@ -1,6 +1,7 @@
 package Expressions;
 
-public class Constant implements Expression {
+
+public class Constant implements Function {
     private double value;
 
     public Constant(double value) {
@@ -26,6 +27,20 @@ public class Constant implements Expression {
         return false;
     }
 
+    @Override
+    public boolean baseEquals(Object obj) {
+        return equals(obj);
+    }
+
+    @Override
+    public Expression derivative() {
+        return new Constant(0);
+    }
+
+    @Override
+    public Expression image(double x) {
+        return this;
+    }
 
     @Override
     public String toString() {

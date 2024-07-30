@@ -1,6 +1,6 @@
 package Expressions;
 
-public class Variable implements Expression {
+public class Variable implements Function {
     String name;
 
     public Variable(String name) {
@@ -24,6 +24,21 @@ public class Variable implements Expression {
     @Override
     public boolean isVariable() {
         return true;
+    }
+
+    @Override
+    public boolean baseEquals(Object obj) {
+        return equals(obj);
+    }
+
+    @Override
+    public Expression derivative() {
+        return new Constant(1);
+    }
+
+    @Override
+    public Expression image(double x) {
+        return new Constant(x);
     }
 
     @Override

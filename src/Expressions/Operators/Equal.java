@@ -1,4 +1,7 @@
-package Expressions;
+package Expressions.Operators;
+
+import Expressions.Constant;
+import Expressions.Expression;
 
 public class Equal extends Operator {
 
@@ -37,15 +40,16 @@ public class Equal extends Operator {
 
     private Expression variableOneSide(Expression varExpr, Expression constExpr) {
         if (varExpr instanceof Add) {
-            return oneSideAdd(varExpr, constExpr);
+            return oneSideAdd((Add) varExpr, constExpr);
         } else if (varExpr instanceof Mul) {
-            return oneSideMul(varExpr, constExpr);
+            return oneSideMul((Mul) varExpr, constExpr);
+        } else if (varExpr instanceof Pow) {
+            return oneSidePow((Pow) varExpr, constExpr);
         }
         return this;
     }
 
-    private Expression oneSideAdd(Expression varExpr, Expression constExpr) {
-        Add varExprAdd = (Add) varExpr;
+    private Expression oneSideAdd(Add varExprAdd, Expression constExpr) {
         if (varExprAdd.getLHS().hasVariable()) {
             return new Equal(varExprAdd.getLHS(), new Add(constExpr, new Mul(new Constant(-1), varExprAdd.getRHS())).simplify());
         } else if (varExprAdd.getRHS().hasVariable()) {
@@ -54,12 +58,19 @@ public class Equal extends Operator {
         return this;
     }
 
-    private Expression oneSideMul(Expression varExpr, Expression constExpr) {
-        Mul varExprMul = (Mul) varExpr;
+    //TODO: change Div to Mul
+    private Expression oneSideMul(Mul varExprMul, Expression constExpr) {
         if (varExprMul.getLHS().hasVariable()) {
             return new Equal(varExprMul.getLHS(), new Div(constExpr, varExprMul.getRHS()).simplify());
         } else if (varExprMul.getRHS().hasVariable()) {
             return new Equal(varExprMul.getRHS(), new Div(constExpr, varExprMul.getLHS()).simplify());
+        }
+        return this;
+    }
+
+    private Expression oneSidePow(Pow varExprPow, Expression constExpr) {
+        if (varExprPow.getLHS().hasVariable()) {
+            return new Equal(varExprPow.getLHS(), new Pow(constExpr, new Pow(varExprPow.getRHS(), new Constant(-1))).simplify());
         }
         return this;
     }

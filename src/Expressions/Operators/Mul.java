@@ -1,8 +1,10 @@
-package Expressions;
+package Expressions.Operators;
 
-import java.io.NotActiveException;
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Function;
 
-public class Mul extends Operator {
+public class Mul extends Operator implements Function {
     
     public Mul(Expression lhs, Expression rhs) {
         super(lhs, rhs);
@@ -17,38 +19,47 @@ public class Mul extends Operator {
             double product = ((Constant) lhs).getValue() * ((Constant) rhs).getValue();
             return new Constant(product);
         } else if (lhs instanceof Constant) {
-            return rhsOperator();
+            return oneSideConstant(rhs, (Constant) lhs);
         } else if (rhs instanceof Constant) {
-            return lhsOperator();
+            return oneSideConstant(lhs, (Constant) rhs);
         } else if (lhs instanceof Operator && rhs instanceof Operator) {
             return lhsOperatorRhsOperator();
         }
         return this;
     }
 
-    private Expression rhsOperator() {
-        if (((Constant) lhs).getValue() == 0) {
-            return new Constant(0);
-        } else if (rhs instanceof Mul) {
-            return simplifyMul((Mul) rhs, lhs).simplify();
-        }
-        return this;
-    }
+    // private Expression rhsOperator() {
+    //     if (((Constant) lhs).getValue() == 0) {
+    //         return new Constant(0);
+    //     } else if (rhs instanceof Mul) {
+    //         return simplifyMul((Mul) rhs, lhs).simplify();
+    //     }
+    //     return this;
+    // }
 
-    private Expression lhsOperator() {
-        if (((Constant) rhs).getValue() == 0) {
+    // private Expression lhsOperator() {
+    //     if (((Constant) rhs).getValue() == 0) {
+    //         return new Constant(0);
+    //     } else if (lhs instanceof Mul) {
+    //         return simplifyMul((Mul) lhs, rhs).simplify();
+    //     }
+    //     return this;
+    // }
+
+    private Expression oneSideConstant(Expression expression, Constant constant) {
+        if (constant.getValue() == 0) {
             return new Constant(0);
-        } else if (lhs instanceof Mul) {
-            return simplifyMul((Mul) lhs, rhs).simplify();
+        } else if (expression instanceof Mul) {
+            return simplifyMul((Mul) expression, constant);
         }
         return this;
     }
 
     private Expression simplifyMul(Mul firstExpr, Expression secondExpr) {
         if (secondExpr.getClass().equals(firstExpr.getRHS().getClass())) {
-            return new Mul(new Mul(secondExpr, firstExpr.getRHS()), firstExpr.getLHS());
+            return new Mul(new Mul(secondExpr, firstExpr.getRHS()), firstExpr.getLHS()).simplify();
         } else if (secondExpr.getClass().equals(firstExpr.getLHS().getClass())) {
-            return new Mul(new Mul(secondExpr, firstExpr.getLHS()), firstExpr.getRHS());
+            return new Mul(new Mul(secondExpr, firstExpr.getLHS()), firstExpr.getRHS()).simplify();
         }
         return this;
     }
@@ -56,27 +67,27 @@ public class Mul extends Operator {
     private Expression lhsOperatorRhsOperator() {
         if (lhs instanceof Mul && rhs instanceof Mul) {
             return lhsMulRhsMul((Mul) lhs, (Mul) rhs).simplify();
-        } else if (lhs instanceof Mul && rhs instanceof Pow) {
-            return lhsMulRhsPow((Mul) lhs, (Pow) rhs).simplify();
-        } else if (lhs instanceof Pow && rhs instanceof Mul) {
-            return lhsMulRhsPow((Mul) rhs, (Pow) lhs).simplify();
+        } else if (rhs instanceof Pow && rhs.baseEquals(lhs)) {
+            return powLhsEqualRhs((Pow) rhs, lhs).simplify();
+        } else if (lhs instanceof Pow && lhs.baseEquals(rhs)) {
+            return powLhsEqualRhs((Pow) lhs, rhs).simplify();
         }
         return this;
     }
 
     private Expression lhsMulRhsMul(Mul firstExpr, Mul secondExpr) {
-        int multiplicationOfSecondMul = 1;
-        int powerOfSecondMul = 1;
+        double multiplicationOfSecondMul = 1;
+        double powerOfSecondMul = 1;
         Pow secondExprPow = null;
 
         if (secondExpr.getLHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getLHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getLHS()).getValue();
             secondExprPow = (Pow) secondExpr.getRHS();
-            powerOfSecondMul = (int) ((Constant) secondExprPow.getRHS()).getValue();
+            powerOfSecondMul = ((Constant) secondExprPow.getRHS()).getValue();
         } else if (secondExpr.getRHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getRHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getRHS()).getValue();
             secondExprPow = (Pow) secondExpr.getLHS();
-            powerOfSecondMul = (int) ((Constant) secondExprPow.getRHS()).getValue();
+            powerOfSecondMul = ((Constant) secondExprPow.getRHS()).getValue();
         }
         if (firstExpr.getRHS() instanceof Constant && firstExpr.getLHS() instanceof Pow) {
             Pow firstMulExprLhs = (Pow) firstExpr.getLHS();
@@ -94,9 +105,18 @@ public class Mul extends Operator {
         return this;
     }
 
-    //TODO: Complete method body
-    private Expression lhsMulRhsPow(Mul mulExpr, Pow powExpr) {
-        return this;
+    // If there is a Pow and both expressions are equals (excluding powers they are raised to)
+    private Expression powLhsEqualRhs(Pow powExpr, Expression expression) {
+        double powerOfFirstPow = ((Constant) powExpr.getRHS()).getValue();
+        double powerOfSecondExpr = 1;
+        double newRhsValue = powerOfFirstPow + powerOfSecondExpr;
+        if (expression instanceof Pow) {
+            Pow secondPow = (Pow) expression;
+            powerOfSecondExpr = ((Constant) secondPow.getRHS()).getValue();
+            newRhsValue = powerOfFirstPow + powerOfSecondExpr;
+            return new Pow(powExpr.getLHS(), new Constant(newRhsValue));
+        }
+        return new Pow(powExpr.getLHS(), new Constant(newRhsValue));
     }
 
     @Override
@@ -130,6 +150,19 @@ public class Mul extends Operator {
             rhsString = "(" + this.rhs.toString() + ")";
         }
         return lhsString + rhsString;
+    }
+
+    // Product rule
+    @Override
+    public Expression derivative() {
+        Expression lhsDerivative = ((Function) lhs).derivative();
+        Expression rhsDerivative = ((Function) rhs).derivative();
+        return (new Add(new Mul(lhs, rhsDerivative), new Mul(lhsDerivative, rhs))).simplify();
+    }
+
+    @Override
+    public Expression image(double x) {
+        return (new Mul(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
     }
 
     @Override

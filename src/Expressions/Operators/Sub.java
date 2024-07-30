@@ -1,6 +1,10 @@
-package Expressions;
+package Expressions.Operators;
 
-public class Sub extends Operator {
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Function;
+
+public class Sub extends Operator implements Function {
     
     public Sub(Expression lhs, Expression rhs) {
         super(lhs, rhs);
@@ -57,6 +61,16 @@ public class Sub extends Operator {
 
     private Expression lhsOperatorRhsOperator() {
         return this;
+    }
+
+    @Override
+    public Expression derivative() {
+        throw new UnsupportedOperationException("Method not yet implemented");
+    }
+
+    @Override
+    public Expression image(double x) {
+        throw new UnsupportedOperationException("Method not yet implemented");
     }
 
 

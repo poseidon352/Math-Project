@@ -1,13 +1,32 @@
+package Expressions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import Expressions.*;
 import Exceptions.*;
+import Expressions.Operators.Add;
+import Expressions.Operators.Equal;
+import Expressions.Operators.Mul;
+import Expressions.Operators.Pow;
 
 import java.lang.Character;
 
 public class ExpressionParser {
+
+    public ExpressionParser(String expression) throws UnknownSymbolException, InputTypoException {
+        List<String> rpn = infixToRpn(expression);
+        Expression expression2 = rpnToExpression(rpn);
+
+        System.out.println("Expression: " + expression2.toString());
+        System.out.print("Postfix Notation:");
+        for (String token : rpn) {
+            System.out.print(" " + token);
+        }
+        System.out.println();
+        System.out.println("Simplified Expression: " + expression2.simplify().toString());
+        System.out.println("Derivative: " + ((Function) expression2).derivative().toString());
+        System.out.println("Image: " + ((Function) expression2).image(1));
+    }
 
     private static boolean isDigit(char c) {
         return Character.isDigit(c);
@@ -19,7 +38,7 @@ public class ExpressionParser {
 
     // Operator having higher precedence
     // value will be returned
-    static int getPrecedence(char ch) {
+    private static int getPrecedence(char ch) {
 
         if (ch == '=') {
             return 1;
@@ -45,7 +64,7 @@ public class ExpressionParser {
     // Method converts  given infix to reverse Polish Noation
     /* TODO: Be able to write multiplication as 2x to represent 2*x
      */
-    static List<String> infixToRpn(String expression) {
+    public static List<String> infixToRpn(String expression) throws InputTypoException {
         //Removes any whitespace in the string
         expression = expression.replaceAll("\\s+","");
         Stack<Character> stack = new Stack<>();
@@ -61,7 +80,7 @@ public class ExpressionParser {
                 output.add(Character.toString(c));
             }
 
-            else if (isDigit(c) || (c == '-' && (i == 0 || !isDigit(expression.charAt(i - 1)) && expression.charAt(i - 1) != ')'))) {
+            else if (isDigit(c) || (c == '-' && (i == 0 || !(isDigit(expression.charAt(i - 1)) || isLetter(expression.charAt(i - 1))) && expression.charAt(i - 1) != ')'))) {
                 // Initialize the number string, possibly with a minus sign
                 String number = (c == '-') ? "-" : "";
                 int increment = (c == '-') ? 1 : 0; // Start increment at 1 if the first character is a minus sign
@@ -74,7 +93,9 @@ public class ExpressionParser {
                         || expression.charAt(i + increment) == '.')) {
                     // Ensure only one decimal point is in the number
                     if (expression.charAt(i + increment) == '.') {
-                        if (decimalFound) break; // Break if a second decimal point is found
+                        if (decimalFound) {
+                            throw new InputTypoException("Second decimal point found in the same number");
+                        } // Break if a second decimal point is found
                         decimalFound = true;
                     }
                     number += expression.charAt(i + increment);
@@ -123,22 +144,22 @@ public class ExpressionParser {
     }
 
     // Checks if a string is a number (can be a decimal number)
-    public static boolean isNumeric(String str) {
+    private static boolean isNumeric(String str) {
         return str.matches("\\d*(.\\d+)?");
     }
 
     // Checks if the string contains a single letter
-    public static boolean isLetter(String str) {
+    private static boolean isLetter(String str) {
         return str.matches("[a-z]");
     }
 
     // Check if the string contains a single operator or parenthesis
-    public static boolean isOperator(String str) {
+    private static boolean isOperator(String str) {
         return str.matches("[+-/*///^()]");
     }
 
     // Converts the algebraic expresion from RPN in a list to an Expression
-    static Expression rpnToExpression(List<String> rpn) throws UnknownSymbolException {
+    public static Expression rpnToExpression(List<String> rpn) throws UnknownSymbolException {
     
         Stack<Expression> stack = new Stack<>();
 
@@ -156,7 +177,7 @@ public class ExpressionParser {
         return stack.pop();
     }
 
-    static void parseOperator(Stack<Expression> stack, String c) throws UnknownSymbolException {
+    private static void parseOperator(Stack<Expression> stack, String c) throws UnknownSymbolException {
         Expression rhs = stack.pop();
         Expression lhs = stack.pop();
         switch (c) {
@@ -167,11 +188,10 @@ public class ExpressionParser {
                 stack.push(new Add(lhs, new Mul(new Constant(-1), rhs)));
                 break;
             case "*":
-                stack.push(new Mul(lhs, rhs));
+                stack.push(new Mul(new Pow(lhs, new Constant(1)), new Pow(rhs, new Constant(1))));
                 break;
             case "/":
-                // stack.push(new Div(lhs, rhs));
-                stack.push(new Mul(lhs, new Pow(rhs, new Constant(-1))));
+                stack.push(new Mul(new Pow(lhs, new Constant(1)), new Pow(rhs, new Constant(-1))));
                 break;
             case "^":
                 stack.push(new Pow(lhs, rhs));
@@ -182,22 +202,5 @@ public class ExpressionParser {
             default:
                 throw new UnknownSymbolException();
         }
-    }
-    public static void main(String[] args) throws UnknownSymbolException
-    {   
-        long start = System.currentTimeMillis();
-
-        String expression = "";
-        List<String> rpn = infixToRpn(expression);
-        for (String token : rpn) {
-            System.out.print(token + " ");
-        }
-        Expression expression2 = rpnToExpression(rpn);
-        System.out.println();
-        System.out.println(expression2.toString());
-        System.out.println(expression2.simplify().toString());
-
-        long end = System.currentTimeMillis();
-        System.out.println("Time: " + (end - start) + "ms");
     }
 }

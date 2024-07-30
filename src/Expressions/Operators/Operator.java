@@ -1,4 +1,8 @@
-package Expressions;
+package Expressions.Operators;
+
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Variable;
 
 public abstract class Operator implements Expression {
     protected Expression lhs;
@@ -47,6 +51,15 @@ public abstract class Operator implements Expression {
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean baseEquals(Object obj) {
+        if (obj instanceof Pow) {
+            Expression lhs = ((Pow) obj).getLHS();
+            return lhs.baseEquals(this);
+        }
+        return equals(obj);
     }
 
     @Override

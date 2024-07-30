@@ -1,6 +1,10 @@
-package Expressions;
+package Expressions.Operators;
 
-public class Add extends Operator {
+import Expressions.Constant;
+import Expressions.Expression;
+import Expressions.Function;
+
+public class Add extends Operator implements Function {
     
     public Add(Expression lhs, Expression rhs) {
         super(lhs, rhs);
@@ -30,7 +34,7 @@ public class Add extends Operator {
     // If the lhs is a Constant and the rhs is an Operator
     private Expression rhsOperator() {
         if (this.rhs instanceof Add) {
-            return simplifyAdd((Add) rhs, lhs).simplify();
+            return simplifyAdd((Add) rhs, lhs);
         // If the constant value is 0 then return rhs
         }
         return basicSimplification((Constant) lhs, rhs);
@@ -39,7 +43,7 @@ public class Add extends Operator {
     // If the lhs is an Operator and the rhs is a Constant
     private Expression lhsOperator() {
         if (this.lhs instanceof Add) {
-            return simplifyAdd((Add) lhs, rhs).simplify();
+            return simplifyAdd((Add) lhs, rhs);
         } 
         return basicSimplification((Constant) rhs, lhs);
     }
@@ -55,9 +59,9 @@ public class Add extends Operator {
     // Will reorder the expression if needed, ex. (x+1)+2 --> x+(1+2)
     private Expression simplifyAdd(Add addExpr, Expression secondExpr) {
         if (secondExpr.getClass().equals(addExpr.getRHS().getClass())) {
-            return new Add(new Add(secondExpr, addExpr.getRHS()), addExpr.getLHS());
+            return new Add((new Add(secondExpr, addExpr.getRHS())).simplify(), addExpr.getLHS());
         } else if (secondExpr.getClass().equals(addExpr.getLHS().getClass())) {
-            return new Add(new Add(secondExpr, addExpr.getLHS()), addExpr.getRHS());
+            return new Add((new Add(secondExpr, addExpr.getLHS())).simplify(), addExpr.getRHS());
         }
         return this;
     }
@@ -106,6 +110,16 @@ public class Add extends Operator {
             return new Add(new Add(addExpr.getLHS(), secondExpr), addExpr.getRHS());
         }
         return this;
+    }
+
+    @Override
+    public Expression derivative() {
+        return (new Add(((Function) lhs).derivative(), ((Function) rhs).derivative())).simplify();
+    }
+
+    @Override
+    public Expression image(double x) {
+        return (new Add(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
     }
 
     @Override
