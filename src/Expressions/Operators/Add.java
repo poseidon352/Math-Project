@@ -2,11 +2,23 @@ package Expressions.Operators;
 
 import Expressions.Constant;
 import Expressions.Expression;
-import Expressions.Function;
+import Expressions.AbstractFunction;
 
-public class Add extends Operator implements Function {
+public class Add extends Operator implements AbstractFunction {
     
     public Add(Expression lhs, Expression rhs) {
+        super(lhs, rhs);
+    }
+
+    public Add(Expression lhs, double rhs) {
+        super(lhs, rhs);
+    }
+
+    public Add(double lhs, Expression rhs) {
+        super(lhs, rhs);
+    }
+
+    public Add(double lhs, double rhs) {
         super(lhs, rhs);
     }
 
@@ -34,7 +46,7 @@ public class Add extends Operator implements Function {
     // If the lhs is a Constant and the rhs is an Operator
     private Expression rhsOperator() {
         if (this.rhs instanceof Add) {
-            return simplifyAdd((Add) rhs, lhs);
+            return addExprSimplification((Add) rhs, lhs);
         // If the constant value is 0 then return rhs
         }
         return basicSimplification((Constant) lhs, rhs);
@@ -43,8 +55,8 @@ public class Add extends Operator implements Function {
     // If the lhs is an Operator and the rhs is a Constant
     private Expression lhsOperator() {
         if (this.lhs instanceof Add) {
-            return simplifyAdd((Add) lhs, rhs);
-        } 
+            return addExprSimplification((Add) lhs, rhs);
+        }
         return basicSimplification((Constant) rhs, lhs);
     }
 
@@ -52,16 +64,6 @@ public class Add extends Operator implements Function {
     private Expression basicSimplification(Constant constant, Expression expression) {
         if (constant.getValue() == 0) {
             return expression;
-        }
-        return this;
-    }
-
-    // Will reorder the expression if needed, ex. (x+1)+2 --> x+(1+2)
-    private Expression simplifyAdd(Add addExpr, Expression secondExpr) {
-        if (secondExpr.getClass().equals(addExpr.getRHS().getClass())) {
-            return new Add((new Add(secondExpr, addExpr.getRHS())).simplify(), addExpr.getLHS());
-        } else if (secondExpr.getClass().equals(addExpr.getLHS().getClass())) {
-            return new Add((new Add(secondExpr, addExpr.getLHS())).simplify(), addExpr.getRHS());
         }
         return this;
     }
@@ -94,9 +96,9 @@ public class Add extends Operator implements Function {
     // directly followed
     private Expression lhsOperatorRhsOperator() {
         if (this.lhs instanceof Add) {
-            return addExprSimplification((Add) lhs, rhs).simplify();
+            return addExprSimplification((Add) lhs, rhs);
         } else if (this.rhs instanceof Add) {
-            return addExprSimplification((Add) rhs, lhs).simplify();
+            return addExprSimplification((Add) rhs, lhs);
         } else if (this.lhs instanceof Mul && this.rhs instanceof Mul) {
             return lhsMulRhsMul((Mul) lhs, (Mul) rhs);
         }
@@ -104,22 +106,36 @@ public class Add extends Operator implements Function {
     }
 
     private Expression addExprSimplification(Add addExpr, Expression secondExpr) {
-        if (addExpr.getLHS() instanceof Constant) {
-            return new Add(new Add(addExpr.getRHS(), secondExpr), addExpr.getLHS());
-        } else if (addExpr.getRHS() instanceof Constant) {
-            return new Add(new Add(addExpr.getLHS(), secondExpr), addExpr.getRHS());
+        if (addExpr.getLHS().containsSameExpression(secondExpr)) {
+            return new Add(new Add(addExpr.getLHS(), secondExpr).simplify(), addExpr.getRHS());
+        } else if (addExpr.getRHS().containsSameExpression(secondExpr)) {
+            return new Add(new Add(addExpr.getRHS(), secondExpr).simplify(), addExpr.getLHS());
         }
         return this;
     }
 
     @Override
-    public Expression derivative() {
-        return (new Add(((Function) lhs).derivative(), ((Function) rhs).derivative())).simplify();
+    public AbstractFunction derivative() {
+        return (AbstractFunction) (new Add((Expression) ((AbstractFunction) lhs).derivative(), 
+                (Expression) ((AbstractFunction) rhs).derivative())).simplify();
     }
 
     @Override
     public Expression image(double x) {
-        return (new Add(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
+        return (new Add(((AbstractFunction) lhs).image(x), ((AbstractFunction) rhs).image(x))).simplify();
+    }
+
+    @Override
+    public boolean isPolynomial() {
+        if (this.lhs instanceof AbstractFunction && this.rhs instanceof AbstractFunction) {
+            return (((AbstractFunction) this.lhs).isPolynomial() && ((AbstractFunction) this.rhs).isPolynomial());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        return (this.lhs.containsSameExpression(expression) || this.rhs.containsSameExpression(expression));
     }
 
     @Override

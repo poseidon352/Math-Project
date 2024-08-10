@@ -1,9 +1,7 @@
-package Expressions.Test;
+package Expressions;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.commons.math3.complex.Complex;
@@ -17,12 +15,14 @@ public class AberthMethod {
      * @param f a Function object representing the polynomial.
      * @return an array with upper and lower bounds.
      */
-    public static double[] getUpperLowerBounds(Function1 f) {
-        int degree = f.getDegree();
-        double[] coef = f.getCoef();
+    public static double[] getUpperLowerBounds(Polynomial f) {
+        List<Double> coef = f.getCoef();
 
-        double upper = 1 + 1 / Math.abs(coef[coef.length - 1]) * maxAbs(coef);
-        double lower = Math.abs(coef[0]) / (Math.abs(coef[0]) + maxAbs(sliceArray(coef, 1, degree + 1)));
+        double upper = 1 + 1 / Math.abs(coef.get(coef.size() - 1)) * maxAbs(coef);
+        double lower = Math.abs(coef.get(0)) / (Math.abs(coef.get(0)));
+        if (coef.size() > 1) {
+            lower += Math.abs(maxAbs(coef.subList(1, coef.size() - 1)));
+        }
 
         return new double[]{upper, lower};
     }
@@ -33,7 +33,7 @@ public class AberthMethod {
      * @param array an array of double values.
      * @return the maximum absolute value.
      */
-    private static double maxAbs(double[] array) {
+    private static double maxAbs(List<Double> array) {
         double max = 0;
         for (double v : array) {
             max = Math.max(max, Math.abs(v));
@@ -42,26 +42,12 @@ public class AberthMethod {
     }
 
     /**
-     * Slice an array from a start index to an end index.
-     *
-     * @param array the original array.
-     * @param start the start index (inclusive).
-     * @param end   the end index (exclusive).
-     * @return a sliced array.
-     */
-    private static double[] sliceArray(double[] array, int start, int end) {
-        double[] sliced = new double[end - start];
-        System.arraycopy(array, start, sliced, 0, end - start);
-        return sliced;
-    }
-
-    /**
      * Initialize the roots of a polynomial using random values within the bounds.
      *
      * @param f a Function object representing the polynomial.
      * @return a list of initialized roots as Complex numbers.
      */
-    public static List<Complex> initRoots(Function1 f) {
+    public static List<Complex> initRoots(Polynomial f) {
         int degree = f.getDegree();
         double[] bounds = getUpperLowerBounds(f);
         double upper = bounds[0];
@@ -73,7 +59,8 @@ public class AberthMethod {
         for (int i = 0; i < degree; i++) {
             double radius = lower + (upper - lower) * random.nextDouble();
             double angle = 2 * Math.PI * random.nextDouble();
-            Complex root = new Complex(radius * Math.cos(angle), radius * Math.sin(angle));
+            // TODO: update this when Complex numbers are added
+            Complex root = new Complex(radius * Math.cos(angle), 0/* radius * Math.sin(angle) */);
             roots.add(root);
         }
 
@@ -86,7 +73,7 @@ public class AberthMethod {
      * @param f a Function object representing the polynomial.
      * @return an array with the number of iterations and the list of roots.
      */
-    public static Object[] aberthMethod(Function1 f) {
+    public static Object[] aberthMethod(Polynomial f) {
         List<Complex> roots = initRoots(f);
         int iteration = 0;
 
@@ -95,7 +82,9 @@ public class AberthMethod {
 
             for (int k = 0; k < roots.size(); k++) {
                 Complex r = roots.get(k);
-                Complex ratio = f.image(r).divide(f.derivative(r));
+                // TODO: Only for real numbers for the time being
+                Complex ratio = new Complex(((Constant) f.image(r.getReal())).getValue() / 
+                                ((Constant) (f.derivative().image(r.getReal()))).getValue());
                 Complex offset = ratio.divide( (new Complex(1).subtract(
                     ratio.multiply(sumInverse(roots, r))
                 )));
@@ -151,19 +140,7 @@ public class AberthMethod {
     }
 
     public static void main(String[] args) {
-        Map<Integer, Double> coef = new HashMap<>();
-        coef.put(0, 4.0);
-        coef.put(1, 4.0);
-        coef.put(2, 1.0);
-        Function1 function = new Function1(coef);
-        Object[] result = aberthMethod(function);
-        int iteration = (int) result[0];
-        List<Complex> roots = (List<Complex>) result[1];
-        String toPrint = "Iterations: " + iteration;
-        for (Object i : roots) {
-            toPrint += " " + (Complex) i;
-        }
-        System.out.println(toPrint);
+
     }
 }
 

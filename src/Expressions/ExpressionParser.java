@@ -3,11 +3,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.apache.commons.math3.complex.Complex;
+
 import Exceptions.*;
-import Expressions.Operators.Add;
-import Expressions.Operators.Equal;
-import Expressions.Operators.Mul;
-import Expressions.Operators.Pow;
+import Expressions.Operators.*;
 
 import java.lang.Character;
 
@@ -16,7 +15,7 @@ public class ExpressionParser {
     public ExpressionParser(String expression) throws UnknownSymbolException, InputTypoException {
         List<String> rpn = infixToRpn(expression);
         Expression expression2 = rpnToExpression(rpn);
-
+        System.out.println(((AbstractFunction) expression2).isPolynomial());
         System.out.println("Expression: " + expression2.toString());
         System.out.print("Postfix Notation:");
         for (String token : rpn) {
@@ -24,8 +23,17 @@ public class ExpressionParser {
         }
         System.out.println();
         System.out.println("Simplified Expression: " + expression2.simplify().toString());
-        System.out.println("Derivative: " + ((Function) expression2).derivative().toString());
-        System.out.println("Image: " + ((Function) expression2).image(1));
+        Expression simplifiedExpression = expression2.simplify();
+        Polynomial polynomial = new Polynomial((AbstractFunction) simplifiedExpression);
+        AberthMethod aberthMethod = new AberthMethod();
+        Object[] result = aberthMethod.aberthMethod(polynomial);
+        int iteration = (int) result[0];
+        List<Complex> roots = (List<Complex>) result[1];
+        String toPrint = "Iterations: " + iteration;
+        for (Object i : roots) {
+            toPrint += " " + (Complex) i;
+        }
+        System.out.println(toPrint);
     }
 
     private static boolean isDigit(char c) {
@@ -134,10 +142,9 @@ public class ExpressionParser {
 
         // pop all the remaining operators from the stack and add them to output
         while (!stack.isEmpty()) {
-            // TODO: Throw an error if this happens
-            // if (stack.peek() == '(') {
-            //     return "This expression is invalid";
-            // }
+            if (stack.peek() == '(') {
+                throw new InputTypoException("Missing closing parenthesis");
+            }
             output.add(Character.toString(stack.pop()));
         }
         return output;
@@ -153,10 +160,10 @@ public class ExpressionParser {
         return str.matches("[a-z]");
     }
 
-    // Check if the string contains a single operator or parenthesis
-    private static boolean isOperator(String str) {
-        return str.matches("[+-/*///^()]");
-    }
+    // // Check if the string contains a single operator or parenthesis
+    // private static boolean isOperator(String str) {
+    //     return str.matches("[+-/*///^()]");
+    // }
 
     // Converts the algebraic expresion from RPN in a list to an Expression
     public static Expression rpnToExpression(List<String> rpn) throws UnknownSymbolException {
@@ -169,7 +176,7 @@ public class ExpressionParser {
             if (isNumeric(c)) {
                 stack.push(new Constant(Double.parseDouble(c)));
             } else if (isLetter(c)) {
-                stack.push(new Mul(new Constant(1), new Pow(new Variable(c), new Constant(1))));
+                stack.push(new Mul(1.0, new Pow(new Variable(c), 1.0)));
             } else {
                 parseOperator(stack, c);
             }
@@ -185,13 +192,13 @@ public class ExpressionParser {
                 stack.push(new Add(lhs, rhs));
                 break;
             case "-":
-                stack.push(new Add(lhs, new Mul(new Constant(-1), rhs)));
+                stack.push(new Sub(lhs, rhs));
                 break;
             case "*":
-                stack.push(new Mul(new Pow(lhs, new Constant(1)), new Pow(rhs, new Constant(1))));
+                stack.push(new Mul(lhs, rhs));
                 break;
             case "/":
-                stack.push(new Mul(new Pow(lhs, new Constant(1)), new Pow(rhs, new Constant(-1))));
+                stack.push(new Div(lhs, rhs));
                 break;
             case "^":
                 stack.push(new Pow(lhs, rhs));

@@ -1,6 +1,6 @@
 package Expressions;
 
-public class Variable implements Function {
+public class Variable implements Expression, AbstractFunction {
     String name;
 
     public Variable(String name) {
@@ -32,13 +32,26 @@ public class Variable implements Function {
     }
 
     @Override
-    public Expression derivative() {
+    public AbstractFunction derivative() {
         return new Constant(1);
     }
 
     @Override
     public Expression image(double x) {
         return new Constant(x);
+    }
+
+    @Override
+    public boolean isPolynomial() {
+        return true;
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        if (expression instanceof Variable) {
+            return true;
+        }
+        return false;
     }
 
     @Override

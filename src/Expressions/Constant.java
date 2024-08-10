@@ -1,7 +1,7 @@
 package Expressions;
 
 
-public class Constant implements Function {
+public class Constant implements Expression, AbstractFunction {
     private double value;
 
     public Constant(double value) {
@@ -33,13 +33,26 @@ public class Constant implements Function {
     }
 
     @Override
-    public Expression derivative() {
+    public AbstractFunction derivative() {
         return new Constant(0);
     }
 
     @Override
     public Expression image(double x) {
         return this;
+    }
+
+    @Override
+    public boolean isPolynomial() {
+        return true;
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        if (expression instanceof Constant) {
+            return true;
+        }
+        return false;
     }
 
     @Override

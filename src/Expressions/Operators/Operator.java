@@ -13,6 +13,22 @@ public abstract class Operator implements Expression {
         this.rhs = rhs;
     }
 
+    public Operator(Expression lhs, double rhs) {
+        this.lhs = lhs;
+        this.rhs = new Constant(rhs);
+    }
+
+    public Operator(double lhs, Expression rhs) {
+        this.lhs = new Constant(lhs);
+        this.rhs = rhs;
+    }
+
+    public Operator(double lhs, double rhs) {
+        this.lhs = new Constant(lhs);
+        this.rhs = new Constant(rhs);
+    }
+
+
     public Expression getLHS() {
         return this.lhs;
     }
@@ -61,6 +77,7 @@ public abstract class Operator implements Expression {
         }
         return equals(obj);
     }
+
 
     @Override
     public int hashCode() {

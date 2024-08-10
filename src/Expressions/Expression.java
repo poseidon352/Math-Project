@@ -6,5 +6,5 @@ public interface Expression {
     boolean hasVariable();
     boolean isVariable();
     boolean baseEquals(Object obj);
-    
+    boolean containsSameExpression(Expression obj);
 }

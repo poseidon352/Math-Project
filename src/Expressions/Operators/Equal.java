@@ -58,7 +58,7 @@ public class Equal extends Operator {
         return this;
     }
 
-    //TODO: change Div to Mul
+    //TODO: change div to mul if doesn't work
     private Expression oneSideMul(Mul varExprMul, Expression constExpr) {
         if (varExprMul.getLHS().hasVariable()) {
             return new Equal(varExprMul.getLHS(), new Div(constExpr, varExprMul.getRHS()).simplify());
@@ -73,6 +73,11 @@ public class Equal extends Operator {
             return new Equal(varExprPow.getLHS(), new Pow(constExpr, new Pow(varExprPow.getRHS(), new Constant(-1))).simplify());
         }
         return this;
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        return (this.lhs.containsSameExpression(expression) || this.rhs.containsSameExpression(expression));
     }
 
     @Override

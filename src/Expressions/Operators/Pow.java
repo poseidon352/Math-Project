@@ -3,12 +3,24 @@ package Expressions.Operators;
 import Expressions.Constant;
 import Expressions.Expression;
 import Expressions.Variable;
-import Expressions.Function;
+import Expressions.AbstractFunction;
 
-public class Pow extends Operator implements Function {
+public class Pow extends Operator implements AbstractFunction {
 
     public Pow(Expression base, Expression exponent) {
         super(base, exponent);
+    }
+
+    public Pow(Expression lhs, double rhs) {
+        super(lhs, rhs);
+    }
+
+    public Pow(double lhs, Expression rhs) {
+        super(lhs, rhs);
+    }
+
+    public Pow(double lhs, double rhs) {
+        super(lhs, rhs);
     }
 
     @Override
@@ -56,16 +68,26 @@ public class Pow extends Operator implements Function {
     }
 
     @Override
-    public Expression derivative() {
+    public AbstractFunction derivative() {
         if (rhs instanceof Constant) {
-            return new Mul(rhs, new Pow(lhs, new Constant(((Constant) rhs).getValue() - 1)));
+            return new Mul(rhs, new Pow(lhs, ((Constant) rhs).getValue() - 1));
         }
         return this;
     }
 
     @Override
     public Expression image(double x) {
-        return (new Pow(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
+        return (new Pow(((AbstractFunction) lhs).image(x), ((AbstractFunction) rhs).image(x))).simplify();
+    }
+
+    @Override
+    public boolean isPolynomial() {
+        return (this.lhs.isVariable() && this.rhs instanceof Constant && ((Constant) this.rhs).getValue() >= 0);
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        return equals(expression);
     }
 
 

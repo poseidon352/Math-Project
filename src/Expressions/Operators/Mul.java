@@ -2,11 +2,23 @@ package Expressions.Operators;
 
 import Expressions.Constant;
 import Expressions.Expression;
-import Expressions.Function;
+import Expressions.AbstractFunction;
 
-public class Mul extends Operator implements Function {
+public class Mul extends Operator implements AbstractFunction {
     
     public Mul(Expression lhs, Expression rhs) {
+        super(lhs, rhs);
+    }
+
+    public Mul(Expression lhs, double rhs) {
+        super(lhs, rhs);
+    }
+
+    public Mul(double lhs, Expression rhs) {
+        super(lhs, rhs);
+    }
+
+    public Mul(double lhs, double rhs) {
         super(lhs, rhs);
     }
 
@@ -27,24 +39,6 @@ public class Mul extends Operator implements Function {
         }
         return this;
     }
-
-    // private Expression rhsOperator() {
-    //     if (((Constant) lhs).getValue() == 0) {
-    //         return new Constant(0);
-    //     } else if (rhs instanceof Mul) {
-    //         return simplifyMul((Mul) rhs, lhs).simplify();
-    //     }
-    //     return this;
-    // }
-
-    // private Expression lhsOperator() {
-    //     if (((Constant) rhs).getValue() == 0) {
-    //         return new Constant(0);
-    //     } else if (lhs instanceof Mul) {
-    //         return simplifyMul((Mul) lhs, rhs).simplify();
-    //     }
-    //     return this;
-    // }
 
     private Expression oneSideConstant(Expression expression, Constant constant) {
         if (constant.getValue() == 0) {
@@ -119,6 +113,24 @@ public class Mul extends Operator implements Function {
         return new Pow(powExpr.getLHS(), new Constant(newRhsValue));
     }
 
+    public Expression expand() {
+        if (this.lhs instanceof Add && this.rhs instanceof Add) {
+            return foil().simplify();
+        }
+        return this;
+    }
+
+// (x+1)(x+2)
+    private Expression foil() {
+        Add lhs = (Add) this.lhs;
+        Add rhs = (Add) this.rhs;
+        Mul f = new Mul(lhs.getLHS(), rhs.getLHS());
+        Mul o = new Mul(lhs.getLHS(), rhs.getRHS());
+        Mul i = new Mul(lhs.getRHS(), rhs.getLHS());
+        Mul l = new Mul(lhs.getRHS(), rhs.getRHS());
+        return new Add(new Add(f, o), new Add(i, l));
+    }
+
     @Override
     public String toString() {
 
@@ -141,12 +153,12 @@ public class Mul extends Operator implements Function {
         String lhsString = this.lhs.toString();
         String rhsString = this.rhs.toString();
 
-        if (lhs instanceof Add || lhs instanceof Sub) {
+        if (lhs instanceof Add) {
             lhsString = "(" + this.lhs.toString() + ")";
         }
 
         
-        if (rhs instanceof Add || rhs instanceof Sub) {
+        if (rhs instanceof Add) {
             rhsString = "(" + this.rhs.toString() + ")";
         }
         return lhsString + rhsString;
@@ -154,15 +166,51 @@ public class Mul extends Operator implements Function {
 
     // Product rule
     @Override
-    public Expression derivative() {
-        Expression lhsDerivative = ((Function) lhs).derivative();
-        Expression rhsDerivative = ((Function) rhs).derivative();
-        return (new Add(new Mul(lhs, rhsDerivative), new Mul(lhsDerivative, rhs))).simplify();
+    public AbstractFunction derivative() {
+        Expression lhsDerivative = (Expression) ((AbstractFunction) lhs).derivative();
+        Expression rhsDerivative = (Expression) ((AbstractFunction) rhs).derivative();
+        return (AbstractFunction) (new Add((Expression) new Mul(lhs, rhsDerivative), new Mul(lhsDerivative, rhs))).simplify();
     }
 
     @Override
     public Expression image(double x) {
-        return (new Mul(((Function) lhs).image(x), ((Function) rhs).image(x))).simplify();
+        return (new Mul(((AbstractFunction) lhs).image(x), ((AbstractFunction) rhs).image(x))).simplify();
+    }
+
+    @Override
+    public boolean isPolynomial() {
+        if (this.lhs instanceof AbstractFunction && this.rhs instanceof AbstractFunction) {
+            return (((AbstractFunction) this.lhs).isPolynomial() && ((AbstractFunction) this.rhs).isPolynomial());
+        }
+        return false;
+    }
+
+    @Override
+    public boolean containsSameExpression(Expression expression) {
+        if (expression instanceof Mul) {
+            return variableHasSamePower(this, (Mul) expression);
+        }
+        return false;
+    }
+
+
+    private boolean variableHasSamePower(Mul firstExpr, Mul secondExpr) {
+        Pow firstExprPow = getVariablePow(firstExpr);
+        Pow secondExprPow = getVariablePow(secondExpr);
+
+        if (firstExprPow.equals(secondExprPow)) {
+            return true;
+        }
+        return false;
+    }
+
+    private Pow getVariablePow(Mul mulExpr) {
+        if (mulExpr.getLHS() instanceof Pow) {
+            return (Pow) mulExpr.getLHS();
+        } else if (mulExpr.getRHS() instanceof Pow) {
+            return (Pow) mulExpr.getRHS();
+        }
+        return null;
     }
 
     @Override
