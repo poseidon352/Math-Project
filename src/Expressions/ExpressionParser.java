@@ -3,8 +3,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import org.apache.commons.math3.complex.Complex;
-
 import Exceptions.*;
 import Expressions.Operators.*;
 
@@ -15,7 +13,6 @@ public class ExpressionParser {
     public ExpressionParser(String expression) throws UnknownSymbolException, InputTypoException {
         List<String> rpn = infixToRpn(expression);
         Expression expression2 = rpnToExpression(rpn);
-        System.out.println(((AbstractFunction) expression2).isPolynomial());
         System.out.println("Expression: " + expression2.toString());
         System.out.print("Postfix Notation:");
         for (String token : rpn) {
@@ -23,17 +20,10 @@ public class ExpressionParser {
         }
         System.out.println();
         System.out.println("Simplified Expression: " + expression2.simplify().toString());
-        Expression simplifiedExpression = expression2.simplify();
-        Polynomial polynomial = new Polynomial((AbstractFunction) simplifiedExpression);
-        AberthMethod aberthMethod = new AberthMethod();
-        Object[] result = aberthMethod.aberthMethod(polynomial);
-        int iteration = (int) result[0];
-        List<Complex> roots = (List<Complex>) result[1];
-        String toPrint = "Iterations: " + iteration;
-        for (Object i : roots) {
-            toPrint += " " + (Complex) i;
+        if (expression2 instanceof Equal) {
+            Equal equal = (Equal) expression2;
+            equal.solve();
         }
-        System.out.println(toPrint);
     }
 
     private static boolean isDigit(char c) {
@@ -70,8 +60,6 @@ public class ExpressionParser {
     }
   
     // Method converts  given infix to reverse Polish Noation
-    /* TODO: Be able to write multiplication as 2x to represent 2*x
-     */
     public static List<String> infixToRpn(String expression) throws InputTypoException {
         //Removes any whitespace in the string
         expression = expression.replaceAll("\\s+","");
@@ -86,6 +74,10 @@ public class ExpressionParser {
             // If the token is a letter (a variable), then add it to the output
             if (isLetter(c)) {
                 output.add(Character.toString(c));
+
+                if (i != 0 && !isOperator(Character.toString(expression.charAt(i - 1)))) {
+                    infixToRpnOperator(stack, output, '*');
+                }
             }
 
             else if (isDigit(c) || (c == '-' && (i == 0 || !(isDigit(expression.charAt(i - 1)) || isLetter(expression.charAt(i - 1))) && expression.charAt(i - 1) != ')'))) {
@@ -131,12 +123,7 @@ public class ExpressionParser {
             // If an operator is encountered then further action is taken
             // based on the precedence of the operator
             else {
-                while (!stack.isEmpty()
-                        && getPrecedence(c) <= getPrecedence(stack.peek()) 
-                        && hasLeftAssociativity(c)) {
-                    output.add(Character.toString(stack.pop()));
-                }
-                stack.push(c);
+                infixToRpnOperator(stack, output, c);
             }
         }
 
@@ -150,6 +137,15 @@ public class ExpressionParser {
         return output;
     }
 
+    private static void infixToRpnOperator(Stack<Character> stack, List<String> output, char c) {
+        while (!stack.isEmpty()
+                        && getPrecedence(c) <= getPrecedence(stack.peek()) 
+                        && hasLeftAssociativity(c)) {
+                    output.add(Character.toString(stack.pop()));
+                }
+                stack.push(c);
+    }
+
     // Checks if a string is a number (can be a decimal number)
     private static boolean isNumeric(String str) {
         return str.matches("\\d*(.\\d+)?");
@@ -161,9 +157,9 @@ public class ExpressionParser {
     }
 
     // // Check if the string contains a single operator or parenthesis
-    // private static boolean isOperator(String str) {
-    //     return str.matches("[+-/*///^()]");
-    // }
+    private static boolean isOperator(String str) {
+        return str.matches("[+-/*///^()]");
+    }
 
     // Converts the algebraic expresion from RPN in a list to an Expression
     public static Expression rpnToExpression(List<String> rpn) throws UnknownSymbolException {

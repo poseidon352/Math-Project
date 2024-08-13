@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.commons.math3.complex.Complex;
+
 import Expressions.Operators.*;
 
 import java.util.ArrayList;
@@ -86,5 +88,11 @@ public class Polynomial extends ConcreteFunction {
         }
     }
 
-    /* Stopping condition: if the function is not an Add, otherwise continue to call recursively */
+    public Complex image(Complex x) {
+        Complex result = new Complex(0);
+        for (int i = 0; i < coef.size(); i++) {
+            result = result.add((new Complex(coef.get(i))).multiply(x.pow(i)));
+        }
+        return result;
+    }
 }

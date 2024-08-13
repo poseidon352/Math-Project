@@ -1,7 +1,6 @@
 package Expressions.Operators;
 
-import Expressions.Constant;
-import Expressions.Expression;
+import Expressions.*;
 
 public class Equal extends Operator {
 
@@ -21,16 +20,24 @@ public class Equal extends Operator {
         this.lhs = simplified.getLHS();
         this.rhs = simplified.getRHS();
 
-        if (lhs.isVariable() && rhs instanceof Constant) {
+        /*if (lhs.isVariable() && rhs instanceof Constant) {
             return this;
-        } else if (lhs.hasVariable() && rhs.hasVariable()) {
+        } else*/ if (((AbstractFunction) lhs).isPolynomial() && ((AbstractFunction) lhs).isPolynomial()) {
+            return polynomialBothSides();
+        } /*else if (lhs.hasVariable() && rhs.hasVariable()) {
             return variableBothSides();
         } else if (lhs.hasVariable()) {
             return ((Equal) variableOneSide(lhs, rhs)).solve();
         } else if (rhs.hasVariable()) {
             return ((Equal) variableOneSide(rhs, lhs)).solve();
-        }
+        }/* */
         //throw an Exception if this line is read
+        return this;
+    }
+
+    private Expression polynomialBothSides() {
+        Polynomial polynomial = new Polynomial((AbstractFunction) (new Sub(this.lhs, this.rhs)).simplify());
+        AberthMethod.aberthMethod(polynomial);
         return this;
     }
 
@@ -51,9 +58,9 @@ public class Equal extends Operator {
 
     private Expression oneSideAdd(Add varExprAdd, Expression constExpr) {
         if (varExprAdd.getLHS().hasVariable()) {
-            return new Equal(varExprAdd.getLHS(), new Add(constExpr, new Mul(new Constant(-1), varExprAdd.getRHS())).simplify());
+            return new Equal(varExprAdd.getLHS(), new Sub(constExpr, varExprAdd.getRHS()).simplify());
         } else if (varExprAdd.getRHS().hasVariable()) {
-            return new Equal(varExprAdd.getRHS(), new Add(constExpr, new Mul(new Constant(-1), varExprAdd.getLHS())).simplify());
+            return new Equal(varExprAdd.getRHS(), new Sub(constExpr, varExprAdd.getLHS()).simplify());
         }
         return this;
     }
@@ -68,9 +75,10 @@ public class Equal extends Operator {
         return this;
     }
 
+    //TODO: Fix this method
     private Expression oneSidePow(Pow varExprPow, Expression constExpr) {
         if (varExprPow.getLHS().hasVariable()) {
-            return new Equal(varExprPow.getLHS(), new Pow(constExpr, new Pow(varExprPow.getRHS(), new Constant(-1))).simplify());
+            return new Equal(varExprPow.getLHS(), new Pow(constExpr, new Pow(varExprPow.getRHS(), -1)).simplify());
         }
         return this;
     }

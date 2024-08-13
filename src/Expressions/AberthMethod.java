@@ -7,7 +7,7 @@ import java.util.Random;
 import org.apache.commons.math3.complex.Complex;
 
 public class AberthMethod {
-    private static final double EPSILON = 1e-12;
+    private static final double EPSILON = 1e-10;
 
     /**
      * Compute the upper and lower bounds for the roots of a polynomial.
@@ -18,7 +18,7 @@ public class AberthMethod {
     public static double[] getUpperLowerBounds(Polynomial f) {
         List<Double> coef = f.getCoef();
 
-        double upper = 1 + 1 / Math.abs(coef.get(coef.size() - 1)) * maxAbs(coef);
+        double upper = 1 + maxAbs(coef) / Math.abs(coef.get(coef.size() - 1));
         double lower = Math.abs(coef.get(0)) / (Math.abs(coef.get(0)));
         if (coef.size() > 1) {
             lower += Math.abs(maxAbs(coef.subList(1, coef.size() - 1)));
@@ -59,8 +59,7 @@ public class AberthMethod {
         for (int i = 0; i < degree; i++) {
             double radius = lower + (upper - lower) * random.nextDouble();
             double angle = 2 * Math.PI * random.nextDouble();
-            // TODO: update this when Complex numbers are added
-            Complex root = new Complex(radius * Math.cos(angle), 0/* radius * Math.sin(angle) */);
+            Complex root = new Complex(radius * Math.cos(angle), radius * Math.sin(angle));
             roots.add(root);
         }
 
@@ -76,18 +75,27 @@ public class AberthMethod {
     public static Object[] aberthMethod(Polynomial f) {
         List<Complex> roots = initRoots(f);
         int iteration = 0;
+        Polynomial derivative = new Polynomial(f.derivative());
 
         while (true) {
             int valid = 0;
 
             for (int k = 0; k < roots.size(); k++) {
                 Complex r = roots.get(k);
-                // TODO: Only for real numbers for the time being
-                Complex ratio = new Complex(((Constant) f.image(r.getReal())).getValue() / 
-                                ((Constant) (f.derivative().image(r.getReal()))).getValue());
+                // System.out.println("Root " + k + ": " + r);
+                Complex ratio = (f.image(r)).divide(derivative.image(r));
                 Complex offset = ratio.divide( (new Complex(1).subtract(
                     ratio.multiply(sumInverse(roots, r))
                 )));
+                Complex rounded = new Complex(round(r.getReal(), 3), round(r.getImaginary(), 3));
+                Complex image = f.image(rounded);
+                Complex imageRounded = new Complex(Math.round(image.getReal()), Math.round(image.getImaginary()));
+                if (imageRounded.equals(new Complex(0, 0))) {
+                    valid++;
+                    roots.set(k, rounded);
+                    continue;
+                }
+                
                 if (Math.abs(offset.getReal()) < EPSILON && Math.abs(offset.getImaginary()) < EPSILON) {
                     valid++;
                 }
@@ -100,13 +108,36 @@ public class AberthMethod {
             iteration++;
         }
 
-        // Round roots to 12 decimal places
-        List<Complex> roundedRoots = new ArrayList<>();
-        for (Complex root : roots) {
-            roundedRoots.add(new Complex(round(root.getReal(), 12), round(root.getImaginary(), 12)));
-        }
+        // // Round roots to 12 decimal places
+        // List<Complex> roundedRoots = new ArrayList<>();
+        // for (Complex root : roots) {
+        //     boolean isRounded = false;
+        //     for (int i = 1; i < 12; i++) {
+        //         Complex rounded = new Complex(round(root.getReal(), i), round(root.getImaginary(), i));
+        //         if (f.image(rounded).equals(new Complex(0))) {
+        //             roundedRoots.add(rounded);
+        //             isRounded = true;
+        //             break;
+        //         }
+        //     }
+        //     if (!isRounded) {
+        //         roundedRoots.add(new Complex(round(root.getReal(), 12), round(root.getImaginary(), 12)));
+        //     }
+        // }
+        //TODO: sort roots
+        // List<Complex> orderedRoots = new ArrayList<>();
+        // Complex maxRoot = orderedRoots.get(0);
+        // for (Complex root : roundedRoots) {
 
-        return new Object[]{iteration, roundedRoots};
+        // }
+
+        String toPrint = "Iterations: " + iteration + "\nRoots:";
+        for (Complex root : roots) {
+            toPrint += " " + root;
+        }
+        System.out.println(toPrint);
+
+        return new Object[]{iteration, roots};
     }
 
     

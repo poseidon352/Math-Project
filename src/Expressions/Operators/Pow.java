@@ -2,7 +2,9 @@ package Expressions.Operators;
 
 import Expressions.Constant;
 import Expressions.Expression;
-import Expressions.Variable;
+
+import java.math.BigDecimal;
+
 import Expressions.AbstractFunction;
 
 public class Pow extends Operator implements AbstractFunction {
@@ -29,7 +31,8 @@ public class Pow extends Operator implements AbstractFunction {
         rhs = rhs.simplify();
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
-            double result = Math.pow(((Constant) lhs).getValue(), ((Constant) rhs).getValue());
+            // double result = Math.pow(((Constant) lhs).getValue(), ((Constant) rhs).getValue());
+            BigDecimal result = ((Constant) lhs).getBigDecimalValue().pow((int)((Constant) rhs).getValue());
             return new Constant(result);
         } else if (lhs instanceof Constant) {
             return rhsOperator();
@@ -90,8 +93,6 @@ public class Pow extends Operator implements AbstractFunction {
         return equals(expression);
     }
 
-
-    // TODO: update to add parentheses around negative numbers
     @Override
     public String toString() {
         if (this.rhs instanceof Constant && ((Constant) this.rhs).getValue() == 1){
@@ -100,12 +101,12 @@ public class Pow extends Operator implements AbstractFunction {
         String lhsString = this.lhs.toString();
         String rhsString = this.rhs.toString();
 
-        if (!(lhs instanceof Constant || lhs.isVariable())) {
+        if (!lhs.isVariable() || (lhs instanceof Constant && ((Constant) lhs).getValue() < 0)) {
             lhsString = "(" + this.lhs.toString() + ")";
         }
 
         
-        if (!(rhs instanceof Constant || rhs instanceof Variable)) {
+        if (!lhs.isVariable() || (rhs instanceof Constant && ((Constant) rhs).getValue() < 0)) {
             rhsString = "(" + this.rhs.toString() + ")";
         }
 

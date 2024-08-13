@@ -1,15 +1,27 @@
 package Expressions;
 
+import java.math.BigDecimal;
 
 public class Constant implements Expression, AbstractFunction {
     private double value;
+    private BigDecimal bigDecimalValue;
 
     public Constant(double value) {
         this.value = value;
+        bigDecimalValue = new BigDecimal(value);
+    }
+
+    public Constant(BigDecimal value) {
+        this.value = value.doubleValue();
+        bigDecimalValue = value;
     }
 
     public double getValue() {
         return value;
+    }
+
+    public BigDecimal getBigDecimalValue() {
+        return bigDecimalValue;
     }
 
     @Override
@@ -57,10 +69,10 @@ public class Constant implements Expression, AbstractFunction {
 
     @Override
     public String toString() {
-        if (value % 1 == 0) {
-            return Integer.toString(((int) value));
-        }
-        return Double.toString(value);
+        // if (value % 1 == 0) {
+        //     return Integer.toString(((int) value));
+        // }
+        return bigDecimalValue.toString();
     }
 
     @Override

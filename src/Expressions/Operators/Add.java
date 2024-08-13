@@ -2,6 +2,9 @@ package Expressions.Operators;
 
 import Expressions.Constant;
 import Expressions.Expression;
+
+import java.math.BigDecimal;
+
 import Expressions.AbstractFunction;
 
 public class Add extends Operator implements AbstractFunction {
@@ -29,7 +32,8 @@ public class Add extends Operator implements AbstractFunction {
         rhs = this.rhs.simplify();
         // If the lhs and rhs are both constants then add them to produce a new constant
         if (this.lhs instanceof Constant && this.rhs instanceof Constant) {
-            double sum = ((Constant) this.lhs).getValue() + ((Constant) this.rhs).getValue();
+            // double sum = ((Constant) this.lhs).getValue() + ((Constant) this.rhs).getValue();
+            BigDecimal sum = ((Constant) this.lhs).getBigDecimalValue().add(((Constant) this.rhs).getBigDecimalValue());
             return new Constant(sum);
         // If the lhs is a Constant and the rhs is an Operator
         } else if (this.lhs instanceof Constant && this.rhs instanceof Operator) {
@@ -62,7 +66,8 @@ public class Add extends Operator implements AbstractFunction {
 
     // If the constant value is 0 then return the other side of the Add
     private Expression basicSimplification(Constant constant, Expression expression) {
-        if (constant.getValue() == 0) {
+        double value = constant.getValue();
+        if (value == 0) {
             return expression;
         }
         return this;
@@ -95,7 +100,10 @@ public class Add extends Operator implements AbstractFunction {
     // These methods will reorder the expression so that the above rules can be 
     // directly followed
     private Expression lhsOperatorRhsOperator() {
-        if (this.lhs instanceof Add) {
+        if (this.lhs instanceof Add && this.rhs instanceof Add) {
+            Add rhs = (Add) this.rhs;
+            return new Add(new Add(this.lhs, rhs.getLHS()).simplify(), rhs.getRHS());
+        }else if (this.lhs instanceof Add) {
             return addExprSimplification((Add) lhs, rhs);
         } else if (this.rhs instanceof Add) {
             return addExprSimplification((Add) rhs, lhs);

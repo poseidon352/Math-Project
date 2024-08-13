@@ -2,6 +2,9 @@ package Expressions.Operators;
 
 import Expressions.Constant;
 import Expressions.Expression;
+
+import java.math.BigDecimal;
+
 import Expressions.AbstractFunction;
 
 public class Mul extends Operator implements AbstractFunction {
@@ -28,7 +31,8 @@ public class Mul extends Operator implements AbstractFunction {
         rhs = rhs.simplify();
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
-            double product = ((Constant) lhs).getValue() * ((Constant) rhs).getValue();
+            // double product = ((Constant) lhs).getValue() * ((Constant) rhs).getValue();
+            BigDecimal product = ((Constant) lhs).getBigDecimalValue().multiply(((Constant) rhs).getBigDecimalValue());
             return new Constant(product);
         } else if (lhs instanceof Constant) {
             return oneSideConstant(rhs, (Constant) lhs);
@@ -46,7 +50,7 @@ public class Mul extends Operator implements AbstractFunction {
         } else if (expression instanceof Mul) {
             return simplifyMul((Mul) expression, constant);
         }
-        return this;
+        return expand();
     }
 
     private Expression simplifyMul(Mul firstExpr, Expression secondExpr) {
@@ -66,7 +70,7 @@ public class Mul extends Operator implements AbstractFunction {
         } else if (lhs instanceof Pow && lhs.baseEquals(rhs)) {
             return powLhsEqualRhs((Pow) lhs, rhs).simplify();
         }
-        return this;
+        return expand();
     }
 
     private Expression lhsMulRhsMul(Mul firstExpr, Mul secondExpr) {
@@ -114,8 +118,20 @@ public class Mul extends Operator implements AbstractFunction {
     }
 
     public Expression expand() {
+        if (this.lhs instanceof Mul) {
+            this.lhs = ((Mul)this.lhs).expand().simplify();
+        }
+
+        if (this.rhs instanceof Mul) {
+            this.rhs = ((Mul)this.rhs).expand().simplify();
+        }
+
         if (this.lhs instanceof Add && this.rhs instanceof Add) {
             return foil().simplify();
+        } else if (this.lhs instanceof Add && (rhs instanceof Constant || rhs.isVariable())) {
+            return foilSingleTerm(rhs, (Add) lhs).simplify();
+        } else if ((lhs instanceof Constant || lhs.isVariable()) && this.rhs instanceof Add) {
+            return foilSingleTerm(lhs, (Add) rhs).simplify();
         }
         return this;
     }
@@ -124,11 +140,17 @@ public class Mul extends Operator implements AbstractFunction {
     private Expression foil() {
         Add lhs = (Add) this.lhs;
         Add rhs = (Add) this.rhs;
-        Mul f = new Mul(lhs.getLHS(), rhs.getLHS());
-        Mul o = new Mul(lhs.getLHS(), rhs.getRHS());
-        Mul i = new Mul(lhs.getRHS(), rhs.getLHS());
-        Mul l = new Mul(lhs.getRHS(), rhs.getRHS());
+        Expression f = new Mul(lhs.getLHS(), rhs.getLHS());
+        Expression o = new Mul(lhs.getLHS(), rhs.getRHS());
+        Expression i = new Mul(lhs.getRHS(), rhs.getLHS());
+        Expression l = new Mul(lhs.getRHS(), rhs.getRHS());
         return new Add(new Add(f, o), new Add(i, l));
+    }
+
+    private Expression foilSingleTerm(Expression constOrVar, Add addExpr) {
+        Mul newLhs = new Mul(constOrVar, addExpr.getLHS());
+        Mul newRhs = new Mul(constOrVar, addExpr.getRHS());
+        return new Add(newLhs, newRhs);
     }
 
     @Override
