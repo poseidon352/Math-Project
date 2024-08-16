@@ -1,6 +1,7 @@
 package Expressions;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 public class Constant implements Expression, AbstractFunction {
     private double value;
@@ -8,12 +9,12 @@ public class Constant implements Expression, AbstractFunction {
 
     public Constant(double value) {
         this.value = value;
-        bigDecimalValue = new BigDecimal(value);
+        bigDecimalValue = new BigDecimal(Double.toString(value), MathContext.DECIMAL128).stripTrailingZeros();
     }
 
     public Constant(BigDecimal value) {
         this.value = value.doubleValue();
-        bigDecimalValue = value;
+        bigDecimalValue = value.stripTrailingZeros();
     }
 
     public double getValue() {
@@ -72,7 +73,7 @@ public class Constant implements Expression, AbstractFunction {
         // if (value % 1 == 0) {
         //     return Integer.toString(((int) value));
         // }
-        return bigDecimalValue.toString();
+        return bigDecimalValue.toPlainString();
     }
 
     @Override

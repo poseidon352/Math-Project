@@ -8,11 +8,12 @@ import org.apache.commons.math3.complex.Complex;
 
 import Expressions.Operators.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Polynomial extends ConcreteFunction {
-    private List<Double> coef;
+    private List<BigDecimal> coef;
     private int degree;
 
     public Polynomial(AbstractFunction function) {
@@ -20,7 +21,7 @@ public class Polynomial extends ConcreteFunction {
         coef = findCoefs();
     }
 
-    public List<Double> getCoef() {
+    public List<BigDecimal> getCoef() {
         return this.coef;
     }
 
@@ -30,10 +31,10 @@ public class Polynomial extends ConcreteFunction {
 
     // The function must be in the for ax^n + bx^(n-1) + ... (The powers need not be in order)
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private List<Double> findCoefs() {
-        Map<Integer,Double> unorderedCoef = getLeafFunctions();
+    private List<BigDecimal> findCoefs() {
+        Map<Integer,BigDecimal> unorderedCoef = getLeafFunctions();
         List<Integer> orderedExponents = new ArrayList(new TreeSet(unorderedCoef.keySet()));
-        List<Double> orderedCoef = new ArrayList<>();
+        List<BigDecimal> orderedCoef = new ArrayList<>();
         this.degree = orderedExponents.get(orderedExponents.size() - 1);
         for (int exponent : orderedExponents) {
             orderedCoef.add(unorderedCoef.get(exponent));
@@ -41,25 +42,25 @@ public class Polynomial extends ConcreteFunction {
         return orderedCoef;
     }
 
-    public Map<Integer,Double> getLeafFunctions() {
-        Map<Integer,Double> coef = new HashMap<>();
+    public Map<Integer,BigDecimal> getLeafFunctions() {
+        Map<Integer,BigDecimal> coef = new HashMap<>();
         collectLeafNodes(this.function, coef);
         return coef;
     }
 
-    private static void collectLeafNodes(AbstractFunction function, Map<Integer,Double> coef) {
+    private static void collectLeafNodes(AbstractFunction function, Map<Integer,BigDecimal> coef) {
         if (function == null) {
             return;
         }
 
         if (function instanceof Constant) {
-            coef.put(0, ((Constant) function).getValue());
+            coef.put(0, ((Constant) function).getBigDecimalValue());
         } else if (function instanceof Variable) {
-            coef.put(1, 1.0);
+            coef.put(1, BigDecimal.ONE);
         } else if (function instanceof Mul) {
             findCoefForMul((Mul) function, coef);
         } else if (function instanceof Pow) {
-            coef.put((int) ((Constant) ((Pow) function).getLHS()).getValue(), 1.0);
+            coef.put((int) ((Constant) ((Pow) function).getLHS()).getValue(), BigDecimal.ONE);
         } else if (function instanceof Add) {
             Add functionAdd = (Add) function;
             collectLeafNodes((AbstractFunction) functionAdd.getLHS(), coef);
@@ -67,10 +68,10 @@ public class Polynomial extends ConcreteFunction {
         }
     }
 
-    private static void findCoefForMul(Mul function, Map<Integer,Double> coef) {
-        double coefficient;
+    private static void findCoefForMul(Mul function, Map<Integer,BigDecimal> coef) {
+        BigDecimal coefficient;
         if (function.getLHS() instanceof Constant) {
-            coefficient = ((Constant) function.getLHS()).getValue();
+            coefficient = ((Constant) function.getLHS()).getBigDecimalValue();
             Expression rhs = function.getRHS();
             if (rhs instanceof Pow) {
                 coef.put((int) ((Constant) ((Pow) rhs).getRHS()).getValue(), coefficient);
@@ -78,7 +79,7 @@ public class Polynomial extends ConcreteFunction {
                 coef.put(1, coefficient);
             }
         } else if (function.getRHS() instanceof Constant) {
-            coefficient = ((Constant) function.getRHS()).getValue();
+            coefficient = ((Constant) function.getRHS()).getBigDecimalValue();
             Expression lhs = function.getLHS();
             if (lhs instanceof Pow) {
                 coef.put((int) ((Constant) ((Pow) lhs).getRHS()).getValue(), coefficient);
@@ -88,10 +89,10 @@ public class Polynomial extends ConcreteFunction {
         }
     }
 
-    public Complex image(Complex x) {
-        Complex result = new Complex(0);
+    public ComplexNumber image(ComplexNumber x) {
+        ComplexNumber result = new ComplexNumber(BigDecimal.ZERO);
         for (int i = 0; i < coef.size(); i++) {
-            result = result.add((new Complex(coef.get(i))).multiply(x.pow(i)));
+            result = result.add((new ComplexNumber(coef.get(i))).multiply(x.pow(i)));
         }
         return result;
     }

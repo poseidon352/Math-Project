@@ -4,6 +4,7 @@ import Expressions.Constant;
 import Expressions.Expression;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 import Expressions.AbstractFunction;
 
@@ -32,7 +33,7 @@ public class Pow extends Operator implements AbstractFunction {
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
             // double result = Math.pow(((Constant) lhs).getValue(), ((Constant) rhs).getValue());
-            BigDecimal result = ((Constant) lhs).getBigDecimalValue().pow((int)((Constant) rhs).getValue());
+            BigDecimal result = ((Constant) lhs).getBigDecimalValue().pow((int)((Constant) rhs).getValue(), MathContext.DECIMAL128);
             return new Constant(result);
         } else if (lhs instanceof Constant) {
             return rhsOperator();

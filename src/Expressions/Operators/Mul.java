@@ -4,6 +4,7 @@ import Expressions.Constant;
 import Expressions.Expression;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 import Expressions.AbstractFunction;
 
@@ -32,7 +33,7 @@ public class Mul extends Operator implements AbstractFunction {
         // If the lhs and rhs are both constants then subtract them to produce a new constant
         if (lhs instanceof Constant && rhs instanceof Constant) {
             // double product = ((Constant) lhs).getValue() * ((Constant) rhs).getValue();
-            BigDecimal product = ((Constant) lhs).getBigDecimalValue().multiply(((Constant) rhs).getBigDecimalValue());
+            BigDecimal product = ((Constant) lhs).getBigDecimalValue().multiply(((Constant) rhs).getBigDecimalValue(), MathContext.DECIMAL128);
             return new Constant(product);
         } else if (lhs instanceof Constant) {
             return oneSideConstant(rhs, (Constant) lhs);
@@ -45,7 +46,7 @@ public class Mul extends Operator implements AbstractFunction {
     }
 
     private Expression oneSideConstant(Expression expression, Constant constant) {
-        if (constant.getValue() == 0) {
+        if (constant.getBigDecimalValue().compareTo(BigDecimal.ZERO) == 0) {
             return new Constant(0);
         } else if (expression instanceof Mul) {
             return simplifyMul((Mul) expression, constant);
@@ -74,29 +75,29 @@ public class Mul extends Operator implements AbstractFunction {
     }
 
     private Expression lhsMulRhsMul(Mul firstExpr, Mul secondExpr) {
-        double multiplicationOfSecondMul = 1;
+        BigDecimal multiplicationOfSecondMul = BigDecimal.ONE;
         double powerOfSecondMul = 1;
         Pow secondExprPow = null;
 
         if (secondExpr.getLHS() instanceof Constant) {
-            multiplicationOfSecondMul = ((Constant) secondExpr.getLHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getLHS()).getBigDecimalValue();
             secondExprPow = (Pow) secondExpr.getRHS();
             powerOfSecondMul = ((Constant) secondExprPow.getRHS()).getValue();
         } else if (secondExpr.getRHS() instanceof Constant) {
-            multiplicationOfSecondMul = ((Constant) secondExpr.getRHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getRHS()).getBigDecimalValue();
             secondExprPow = (Pow) secondExpr.getLHS();
             powerOfSecondMul = ((Constant) secondExprPow.getRHS()).getValue();
         }
         if (firstExpr.getRHS() instanceof Constant && firstExpr.getLHS() instanceof Pow) {
             Pow firstMulExprLhs = (Pow) firstExpr.getLHS();
             if (secondExprPow.getLHS().equals(firstMulExprLhs.getLHS())) {
-                return new Mul(new Constant(((Constant) firstExpr.getRHS()).getValue() * multiplicationOfSecondMul), 
+                return new Mul(new Constant(((Constant) firstExpr.getRHS()).getBigDecimalValue().multiply(multiplicationOfSecondMul, MathContext.DECIMAL128)), 
                 new Pow(secondExprPow.getLHS(), new Constant(((Constant) firstMulExprLhs.getRHS()).getValue() + powerOfSecondMul)));
             }
         } else if (firstExpr.getRHS() instanceof Pow && firstExpr.getLHS() instanceof Constant) {
             Pow firstMulExprRhs = (Pow) firstExpr.getRHS();
             if (secondExprPow.getLHS().equals(firstMulExprRhs.getLHS())) {
-                return new Mul(new Constant(((Constant) firstExpr.getLHS()).getValue() * multiplicationOfSecondMul), 
+                return new Mul(new Constant(((Constant) firstExpr.getLHS()).getBigDecimalValue().multiply(multiplicationOfSecondMul, MathContext.DECIMAL128)), 
                 new Pow(secondExprPow.getLHS(), new Constant(((Constant) firstMulExprRhs.getRHS()).getValue() + powerOfSecondMul)));
             }
         }

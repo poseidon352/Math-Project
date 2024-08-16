@@ -1,6 +1,6 @@
 package Expressions;
 
-public class ConcreteFunction implements AbstractFunction {
+public class ConcreteFunction extends Thread implements AbstractFunction {
     protected AbstractFunction function;
 
     public ConcreteFunction(AbstractFunction function) {

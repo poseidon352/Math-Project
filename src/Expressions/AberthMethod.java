@@ -1,13 +1,14 @@
 package Expressions;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.commons.math3.complex.Complex;
-
 public class AberthMethod {
-    private static final double EPSILON = 1e-10;
+    private static final BigDecimal EPSILON = new BigDecimal("1e-20", MathContext.DECIMAL128);
 
     /**
      * Compute the upper and lower bounds for the roots of a polynomial.
@@ -15,16 +16,16 @@ public class AberthMethod {
      * @param f a Function object representing the polynomial.
      * @return an array with upper and lower bounds.
      */
-    public static double[] getUpperLowerBounds(Polynomial f) {
-        List<Double> coef = f.getCoef();
+    public static BigDecimal[] getUpperLowerBounds(Polynomial f) {
+        List<BigDecimal> coef = f.getCoef();
 
-        double upper = 1 + maxAbs(coef) / Math.abs(coef.get(coef.size() - 1));
-        double lower = Math.abs(coef.get(0)) / (Math.abs(coef.get(0)));
+        BigDecimal upper = BigDecimal.ONE.add(maxAbs(coef).divide(coef.get(coef.size() - 1).abs(), MathContext.DECIMAL128), MathContext.DECIMAL128);
+        BigDecimal lower = (coef.get(0).abs()).divide((coef.get(0).abs()), MathContext.DECIMAL128);
         if (coef.size() > 1) {
-            lower += Math.abs(maxAbs(coef.subList(1, coef.size() - 1)));
+            lower = lower.add((maxAbs(coef.subList(1, coef.size() - 1))).abs(), MathContext.DECIMAL128);
         }
 
-        return new double[]{upper, lower};
+        return new BigDecimal[]{upper, lower};
     }
 
     /**
@@ -33,10 +34,13 @@ public class AberthMethod {
      * @param array an array of double values.
      * @return the maximum absolute value.
      */
-    private static double maxAbs(List<Double> array) {
-        double max = 0;
-        for (double v : array) {
-            max = Math.max(max, Math.abs(v));
+    private static BigDecimal maxAbs(List<BigDecimal> array) {
+        BigDecimal max = BigDecimal.ZERO;
+        for (BigDecimal v : array) {
+            // max = Math.max(max, Math.abs(v));
+            if ((v.abs()).compareTo(max) > 0) {
+                max = v;
+            }
         }
         return max;
     }
@@ -47,21 +51,24 @@ public class AberthMethod {
      * @param f a Function object representing the polynomial.
      * @return a list of initialized roots as Complex numbers.
      */
-    public static List<Complex> initRoots(Polynomial f) {
+    public static List<ComplexNumber> initRoots(Polynomial f) {
         int degree = f.getDegree();
-        double[] bounds = getUpperLowerBounds(f);
-        double upper = bounds[0];
-        double lower = bounds[1];
+        BigDecimal[] bounds = getUpperLowerBounds(f);
+        BigDecimal upper = bounds[0];
+        BigDecimal lower = bounds[1];
 
-        List<Complex> roots = new ArrayList<>();
+        List<ComplexNumber> roots = new ArrayList<>();
         Random random = new Random();
 
         for (int i = 0; i < degree; i++) {
-            double radius = lower + (upper - lower) * random.nextDouble();
+            BigDecimal radius = lower.add((upper.subtract(lower)).multiply(new BigDecimal(Double.toString(random.nextDouble()), MathContext.DECIMAL128)));
             double angle = 2 * Math.PI * random.nextDouble();
-            Complex root = new Complex(radius * Math.cos(angle), radius * Math.sin(angle));
+            ComplexNumber root = new ComplexNumber(radius.multiply(new BigDecimal(Double.toString(Math.cos(angle)), MathContext.DECIMAL128)),
+                                                    radius.multiply(new BigDecimal(Double.toString(Math.sin(angle)), MathContext.DECIMAL128)));
             roots.add(root);
         }
+        // roots.add(new ComplexNumber(new BigDecimal("3")));
+        // roots.add(new ComplexNumber(new BigDecimal("4")));
 
         return roots;
     }
@@ -73,7 +80,7 @@ public class AberthMethod {
      * @return an array with the number of iterations and the list of roots.
      */
     public static Object[] aberthMethod(Polynomial f) {
-        List<Complex> roots = initRoots(f);
+        List<ComplexNumber> roots = initRoots(f);
         int iteration = 0;
         Polynomial derivative = new Polynomial(f.derivative());
 
@@ -81,23 +88,44 @@ public class AberthMethod {
             int valid = 0;
 
             for (int k = 0; k < roots.size(); k++) {
-                Complex r = roots.get(k);
-                // System.out.println("Root " + k + ": " + r);
-                Complex ratio = (f.image(r)).divide(derivative.image(r));
-                Complex offset = ratio.divide( (new Complex(1).subtract(
+                ComplexNumber r = roots.get(k);
+                System.out.println("Root " + k + ": " + r);
+
+                // ComplexNumber image = f.image(r);
+                // System.out.println(image);
+                // ComplexNumber derivativeImage = derivative.image(r);
+                // System.out.println(derivativeImage);
+                // ComplexNumber division = image.divide(derivativeImage);
+                // System.out.println(division);
+
+                if (r.getReal().abs().compareTo(EPSILON) < 0) {
+                    r = new ComplexNumber(BigDecimal.ZERO, r.getImaginary());
+                }
+    
+                if (r.getImaginary().abs().compareTo(EPSILON) < 0) {
+                    r = new ComplexNumber(r.getReal(), BigDecimal.ZERO);
+                } 
+                
+                ComplexNumber ratio = (f.image(r)).divide(derivative.image(r));
+                ComplexNumber offset = ratio.divide( (new ComplexNumber(BigDecimal.ONE).subtract(
                     ratio.multiply(sumInverse(roots, r))
                 )));
-                Complex rounded = new Complex(round(r.getReal(), 3), round(r.getImaginary(), 3));
-                Complex image = f.image(rounded);
-                Complex imageRounded = new Complex(Math.round(image.getReal()), Math.round(image.getImaginary()));
-                if (imageRounded.equals(new Complex(0, 0))) {
-                    valid++;
-                    roots.set(k, rounded);
-                    continue;
-                }
                 
-                if (Math.abs(offset.getReal()) < EPSILON && Math.abs(offset.getImaginary()) < EPSILON) {
+                // ComplexNumber rounded = new ComplexNumber(r.getReal().round(new MathContext(2, RoundingMode.HALF_UP)), r.getImaginary().round(new MathContext(2, RoundingMode.HALF_UP)));
+                // ComplexNumber image = f.image(rounded);
+                // ComplexNumber imageRounded = new ComplexNumber(image.getReal().round(new MathContext(1, RoundingMode.HALF_UP)),image.getImaginary().round(new MathContext(1, RoundingMode.HALF_UP)));
+                // if (imageRounded.getReal().compareTo(BigDecimal.ZERO) == 0 && imageRounded.getImaginary().compareTo(BigDecimal.ZERO) == 0) {
+                //     System.exit(0);
+                //     valid++;
+                //     roots.set(k, rounded);
+                //     continue;
+                // }
+                
+                if (offset.getReal().abs().compareTo(EPSILON) < 0 && offset.getImaginary().abs().compareTo(EPSILON) < 0) {
                     valid++;
+                    roots.set(k, r);
+                    System.out.println("This is a correct root");
+                    continue;
                 }
                 roots.set(k, r.subtract(offset));
             }
@@ -108,36 +136,32 @@ public class AberthMethod {
             iteration++;
         }
 
-        // // Round roots to 12 decimal places
-        // List<Complex> roundedRoots = new ArrayList<>();
-        // for (Complex root : roots) {
-        //     boolean isRounded = false;
-        //     for (int i = 1; i < 12; i++) {
-        //         Complex rounded = new Complex(round(root.getReal(), i), round(root.getImaginary(), i));
-        //         if (f.image(rounded).equals(new Complex(0))) {
-        //             roundedRoots.add(rounded);
-        //             isRounded = true;
-        //             break;
-        //         }
-        //     }
-        //     if (!isRounded) {
-        //         roundedRoots.add(new Complex(round(root.getReal(), 12), round(root.getImaginary(), 12)));
-        //     }
-        // }
-        //TODO: sort roots
-        // List<Complex> orderedRoots = new ArrayList<>();
-        // Complex maxRoot = orderedRoots.get(0);
-        // for (Complex root : roundedRoots) {
+        // Round roots to 12 decimal places
+        ArrayList<ComplexNumber> roundedRoots = new ArrayList<>();
+        for (ComplexNumber root : roots) {
 
-        // }
+            if (root.getReal().abs().compareTo(EPSILON) < 0) {
+                root = new ComplexNumber(BigDecimal.ZERO, root.getImaginary());
+            }
+
+            if (root.getImaginary().abs().compareTo(EPSILON) < 0) {
+                root = new ComplexNumber(root.getReal(), BigDecimal.ZERO);
+            } 
+
+
+            roundedRoots.add(new ComplexNumber(root.getReal().round(new MathContext(2, RoundingMode.HALF_UP)).stripTrailingZeros(),
+                            root.getImaginary().round(new MathContext(2, RoundingMode.HALF_UP)).stripTrailingZeros()));
+        } 
+
+        sort(roundedRoots);
 
         String toPrint = "Iterations: " + iteration + "\nRoots:";
-        for (Complex root : roots) {
+        for (ComplexNumber root : roundedRoots) {
             toPrint += " " + root;
         }
         System.out.println(toPrint);
 
-        return new Object[]{iteration, roots};
+        return new Object[]{iteration, roundedRoots};
     }
 
     
@@ -148,11 +172,11 @@ public class AberthMethod {
      * @param r     the root for which the sum is computed.
      * @return the sum of inverses.
      */
-    private static Complex sumInverse(List<Complex> roots, Complex r) {
-        Complex sum = new Complex(0);
-        for (Complex x : roots) {
-            if (!x.equals(r)) {
-                sum = sum.add(new Complex(1).divide(r.subtract(x)));
+    private static ComplexNumber sumInverse(List<ComplexNumber> roots, ComplexNumber r) {
+        ComplexNumber sum = new ComplexNumber(BigDecimal.ZERO);
+        for (ComplexNumber x : roots) {
+            if (x.compareTo(r) != 0) {
+                sum = sum.add(new ComplexNumber(BigDecimal.ONE).divide(r.subtract(x)));
             }
         }
         return sum;
@@ -170,8 +194,22 @@ public class AberthMethod {
         return Math.round(value * scale) / scale;
     }
 
-    public static void main(String[] args) {
+    // An implementation of insertion sort to sort the rounded roots
+    static void sort(ArrayList<ComplexNumber> roots) {
+        int n = roots.size();
+        for (int i = 1; i < n; ++i) {
+            ComplexNumber key = roots.get(i);
+            int j = i - 1;
 
+            /* Move elements of arr[0..i-1], that are
+               greater than key, to one position ahead
+               of their current position */
+            while (j >= 0 && roots.get(j).compareTo(key) > 0) {
+                roots.set(j + 1, roots.get(j));
+                j = j - 1;
+            }
+            roots.set(j+1, key);
+        }
     }
 }
 

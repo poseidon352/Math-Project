@@ -4,6 +4,7 @@ import Expressions.Constant;
 import Expressions.Expression;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 import Expressions.AbstractFunction;
 
@@ -33,7 +34,7 @@ public class Add extends Operator implements AbstractFunction {
         // If the lhs and rhs are both constants then add them to produce a new constant
         if (this.lhs instanceof Constant && this.rhs instanceof Constant) {
             // double sum = ((Constant) this.lhs).getValue() + ((Constant) this.rhs).getValue();
-            BigDecimal sum = ((Constant) this.lhs).getBigDecimalValue().add(((Constant) this.rhs).getBigDecimalValue());
+            BigDecimal sum = ((Constant) this.lhs).getBigDecimalValue().add(((Constant) this.rhs).getBigDecimalValue(), MathContext.DECIMAL32);
             return new Constant(sum);
         // If the lhs is a Constant and the rhs is an Operator
         } else if (this.lhs instanceof Constant && this.rhs instanceof Operator) {
@@ -66,31 +67,33 @@ public class Add extends Operator implements AbstractFunction {
 
     // If the constant value is 0 then return the other side of the Add
     private Expression basicSimplification(Constant constant, Expression expression) {
-        double value = constant.getValue();
-        if (value == 0) {
+        BigDecimal value = constant.getBigDecimalValue();
+        if (value.compareTo(BigDecimal.ZERO) == 0) {
             return expression;
         }
         return this;
     }
 
     private Expression lhsMulRhsMul(Mul firstExpr, Mul secondExpr) {
-        int multiplicationOfSecondMul = 1;
+        BigDecimal multiplicationOfSecondMul = BigDecimal.ONE;
         Pow secondExprPow = null;
 
         if (secondExpr.getLHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getLHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getLHS()).getBigDecimalValue();
             secondExprPow = (Pow) secondExpr.getRHS();
         } else if (secondExpr.getRHS() instanceof Constant) {
-            multiplicationOfSecondMul = (int) ((Constant) secondExpr.getRHS()).getValue();
+            multiplicationOfSecondMul = ((Constant) secondExpr.getRHS()).getBigDecimalValue();
             secondExprPow = (Pow) secondExpr.getLHS();
         }
         if (firstExpr.getRHS() instanceof Constant && firstExpr.getLHS() instanceof Pow) {
             if (secondExprPow.equals(firstExpr.getLHS())) {
-                return new Mul(new Constant(((Constant) firstExpr.getRHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
+                return new Mul(new Constant(((Constant) firstExpr.getRHS()).getBigDecimalValue().add(multiplicationOfSecondMul,
+                                                                            MathContext.DECIMAL128)), secondExprPow).simplify();
             }
         } else if (firstExpr.getRHS() instanceof Pow && firstExpr.getLHS() instanceof Constant) {
             if (secondExprPow.equals(firstExpr.getRHS())) {
-                return new Mul(new Constant(((Constant) firstExpr.getLHS()).getValue() + multiplicationOfSecondMul), secondExprPow).simplify();
+                return new Mul(new Constant(((Constant) firstExpr.getLHS()).getBigDecimalValue().add(multiplicationOfSecondMul,
+                                                                            MathContext.DECIMAL128)), secondExprPow).simplify();
             }
         }
         return this;
@@ -102,7 +105,7 @@ public class Add extends Operator implements AbstractFunction {
     private Expression lhsOperatorRhsOperator() {
         if (this.lhs instanceof Add && this.rhs instanceof Add) {
             Add rhs = (Add) this.rhs;
-            return new Add(new Add(this.lhs, rhs.getLHS()).simplify(), rhs.getRHS());
+            return new Add(new Add(this.lhs, rhs.getLHS()).simplify(), rhs.getRHS()).simplify();
         }else if (this.lhs instanceof Add) {
             return addExprSimplification((Add) lhs, rhs);
         } else if (this.rhs instanceof Add) {
