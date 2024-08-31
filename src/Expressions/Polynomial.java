@@ -4,8 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.commons.math3.complex.Complex;
-
 import Expressions.Operators.*;
 
 import java.math.BigDecimal;
@@ -29,7 +27,7 @@ public class Polynomial extends ConcreteFunction {
         return this.degree;
     }
 
-    // The function must be in the for ax^n + bx^(n-1) + ... (The powers need not be in order)
+    // The function must be in the form ax^n + bx^(n-1) + ... (The powers need not be in order)
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private List<BigDecimal> findCoefs() {
         Map<Integer,BigDecimal> unorderedCoef = getLeafFunctions();
@@ -42,7 +40,7 @@ public class Polynomial extends ConcreteFunction {
         return orderedCoef;
     }
 
-    public Map<Integer,BigDecimal> getLeafFunctions() {
+    private Map<Integer,BigDecimal> getLeafFunctions() {
         Map<Integer,BigDecimal> coef = new HashMap<>();
         collectLeafNodes(this.function, coef);
         return coef;

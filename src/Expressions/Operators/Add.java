@@ -6,6 +6,7 @@ import Expressions.Expression;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
+import Expressions.AberthMethod;
 import Expressions.AbstractFunction;
 
 public class Add extends Operator implements AbstractFunction {
@@ -34,7 +35,7 @@ public class Add extends Operator implements AbstractFunction {
         // If the lhs and rhs are both constants then add them to produce a new constant
         if (this.lhs instanceof Constant && this.rhs instanceof Constant) {
             // double sum = ((Constant) this.lhs).getValue() + ((Constant) this.rhs).getValue();
-            BigDecimal sum = ((Constant) this.lhs).getBigDecimalValue().add(((Constant) this.rhs).getBigDecimalValue(), MathContext.DECIMAL32);
+            BigDecimal sum = ((Constant) this.lhs).getBigDecimalValue().add(((Constant) this.rhs).getBigDecimalValue(), AberthMethod.mathContext);
             return new Constant(sum);
         // If the lhs is a Constant and the rhs is an Operator
         } else if (this.lhs instanceof Constant && this.rhs instanceof Operator) {
@@ -88,12 +89,12 @@ public class Add extends Operator implements AbstractFunction {
         if (firstExpr.getRHS() instanceof Constant && firstExpr.getLHS() instanceof Pow) {
             if (secondExprPow.equals(firstExpr.getLHS())) {
                 return new Mul(new Constant(((Constant) firstExpr.getRHS()).getBigDecimalValue().add(multiplicationOfSecondMul,
-                                                                            MathContext.DECIMAL128)), secondExprPow).simplify();
+                                                                            AberthMethod.mathContext)), secondExprPow).simplify();
             }
         } else if (firstExpr.getRHS() instanceof Pow && firstExpr.getLHS() instanceof Constant) {
             if (secondExprPow.equals(firstExpr.getRHS())) {
                 return new Mul(new Constant(((Constant) firstExpr.getLHS()).getBigDecimalValue().add(multiplicationOfSecondMul,
-                                                                            MathContext.DECIMAL128)), secondExprPow).simplify();
+                                                                            AberthMethod.mathContext)), secondExprPow).simplify();
             }
         }
         return this;

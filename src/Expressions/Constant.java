@@ -1,7 +1,6 @@
 package Expressions;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 
 public class Constant implements Expression, AbstractFunction {
     private double value;
@@ -9,7 +8,7 @@ public class Constant implements Expression, AbstractFunction {
 
     public Constant(double value) {
         this.value = value;
-        bigDecimalValue = new BigDecimal(Double.toString(value), MathContext.DECIMAL128).stripTrailingZeros();
+        bigDecimalValue = new BigDecimal(Double.toString(value), AberthMethod.mathContext).stripTrailingZeros();
     }
 
     public Constant(BigDecimal value) {

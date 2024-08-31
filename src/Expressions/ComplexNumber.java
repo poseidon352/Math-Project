@@ -1,7 +1,6 @@
 package Expressions;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 
 import org.apache.commons.math3.exception.NullArgumentException;
 import org.apache.commons.math3.util.MathUtils;
@@ -32,24 +31,24 @@ public class ComplexNumber {
     public ComplexNumber add(ComplexNumber addend) throws NullArgumentException {
         MathUtils.checkNotNull(addend);
 
-        return createComplexNumber(real.add(addend.getReal(), MathContext.DECIMAL128),
-                             imaginary.add(addend.getImaginary(), MathContext.DECIMAL128));
+        return createComplexNumber(real.add(addend.getReal(), AberthMethod.mathContext),
+                             imaginary.add(addend.getImaginary(), AberthMethod.mathContext));
     }
 
     public ComplexNumber subtract(ComplexNumber subtrahend)
         throws NullArgumentException {
         MathUtils.checkNotNull(subtrahend);
 
-        return createComplexNumber(real.subtract(subtrahend.getReal(), MathContext.DECIMAL128),
-                             imaginary.subtract(subtrahend.getImaginary(), MathContext.DECIMAL128));
+        return createComplexNumber(real.subtract(subtrahend.getReal(), AberthMethod.mathContext),
+                             imaginary.subtract(subtrahend.getImaginary(), AberthMethod.mathContext));
     }
 
     public ComplexNumber multiply(ComplexNumber factor)
         throws NullArgumentException {
         MathUtils.checkNotNull(factor);
 
-        return createComplexNumber((real.multiply(factor.getReal(), MathContext.DECIMAL128)).subtract(imaginary.multiply(factor.getImaginary(), MathContext.DECIMAL128), MathContext.DECIMAL128),
-                             (real.multiply(factor.getImaginary(), MathContext.DECIMAL128)).add(imaginary.multiply(factor.getReal(), MathContext.DECIMAL128), MathContext.DECIMAL128));
+        return createComplexNumber((real.multiply(factor.getReal(), AberthMethod.mathContext)).subtract(imaginary.multiply(factor.getImaginary(), AberthMethod.mathContext), AberthMethod.mathContext),
+                             (real.multiply(factor.getImaginary(), AberthMethod.mathContext)).add(imaginary.multiply(factor.getReal(), AberthMethod.mathContext), AberthMethod.mathContext));
     }
 
     public ComplexNumber divide(ComplexNumber divisor)
@@ -60,15 +59,15 @@ public class ComplexNumber {
         final BigDecimal d = divisor.getImaginary();
 
         if ((c.abs()).compareTo(d.abs()) < 0) {
-            BigDecimal q = c.divide(d, MathContext.DECIMAL128);
+            BigDecimal q = c.divide(d, AberthMethod.mathContext);
             BigDecimal denominator = (c.multiply(q)).add(d);
-            return createComplexNumber(((real.multiply(q, MathContext.DECIMAL128)).add(imaginary, MathContext.DECIMAL128)).divide(denominator, MathContext.DECIMAL128),
-                ((imaginary.multiply(q, MathContext.DECIMAL128)).subtract(real, MathContext.DECIMAL128)).divide(denominator, MathContext.DECIMAL128));
+            return createComplexNumber(((real.multiply(q, AberthMethod.mathContext)).add(imaginary, AberthMethod.mathContext)).divide(denominator, AberthMethod.mathContext),
+                ((imaginary.multiply(q, AberthMethod.mathContext)).subtract(real, AberthMethod.mathContext)).divide(denominator, AberthMethod.mathContext));
         } else {
-            BigDecimal q = d.divide(c, MathContext.DECIMAL128);
-            BigDecimal denominator = (d.multiply(q, MathContext.DECIMAL128)).add(c, MathContext.DECIMAL128);
-            return createComplexNumber(((imaginary.multiply(q, MathContext.DECIMAL128)).add(real, MathContext.DECIMAL128)).divide(denominator, MathContext.DECIMAL128),
-                (imaginary.subtract(real.multiply(q, MathContext.DECIMAL128), MathContext.DECIMAL128)).divide(denominator, MathContext.DECIMAL128));
+            BigDecimal q = d.divide(c, AberthMethod.mathContext);
+            BigDecimal denominator = (d.multiply(q, AberthMethod.mathContext)).add(c, AberthMethod.mathContext);
+            return createComplexNumber(((imaginary.multiply(q, AberthMethod.mathContext)).add(real, AberthMethod.mathContext)).divide(denominator, AberthMethod.mathContext),
+                (imaginary.subtract(real.multiply(q, AberthMethod.mathContext), AberthMethod.mathContext)).divide(denominator, AberthMethod.mathContext));
         }
     }
 
