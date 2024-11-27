@@ -11,9 +11,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class AberthMethod {
-    // public static final MathContext mathContext = MathContext.DECIMAL128;
-    public static final MathContext mathContext = new MathContext(50, RoundingMode.HALF_EVEN);
+    public static final MathContext mathContext = new MathContext(10, RoundingMode.HALF_EVEN);
     private static final BigDecimal EPSILON = new BigDecimal("1e-20", mathContext);
+
+    private static BigDecimal upperReal;
+    private static BigDecimal lowerReal;
 
     /**
      * Compute the upper and lower bounds for the roots of a polynomial.
@@ -21,16 +23,21 @@ public class AberthMethod {
      * @param f a Function object representing the polynomial.
      * @return an array with upper and lower bounds.
      */
-    public static BigDecimal[] getUpperLowerBounds(Polynomial f) {
+    public static void setUpperLowerBounds(Polynomial f) {
         List<BigDecimal> coef = f.getCoef();
+        int degree = coef.size() - 1;
 
-        BigDecimal upper = BigDecimal.ONE.add(maxAbs(coef).divide(coef.get(coef.size() - 1).abs(), mathContext), mathContext);
-        BigDecimal lower = (coef.get(0).abs()).divide((coef.get(0).abs()), mathContext);
-        if (coef.size() > 1) {
-            lower = lower.add((maxAbs(coef.subList(1, coef.size() - 1))).abs(), mathContext);
-        }
+        upperReal = BigDecimal.ONE.add(maxAbs(coef, 0, degree).divide(coef.get(degree).abs(), mathContext), mathContext);
+        // lowerReal = (coef.get(0).abs()).divide((coef.get(0).abs()), mathContext);
+        // if (coef.size() > 1) {
+        //     lowerReal = lowerReal.add((maxAbs(coef, 1, degree)).abs(), mathContext);
+        // }
 
-        return new BigDecimal[]{upper, lower};
+        lowerReal = (coef.get(0)).abs().divide((coef.get(0)).abs().add(maxAbs(coef, 1, degree + 1), mathContext), mathContext);
+
+        System.out.println("UpperReal: " + upperReal.toPlainString());
+        System.out.println("LowerReal: " + lowerReal.toPlainString());
+        //return new BigDecimal[]{upper, lower};
     }
 
     /**
@@ -39,10 +46,9 @@ public class AberthMethod {
      * @param array an array of double values.
      * @return the maximum absolute value.
      */
-    private static BigDecimal maxAbs(List<BigDecimal> array) {
+    private static BigDecimal maxAbs(List<BigDecimal> array, int start, int end) {
         BigDecimal max = BigDecimal.ZERO;
         for (BigDecimal v : array) {
-            // max = Math.max(max, Math.abs(v));
             if ((v.abs()).compareTo(max) > 0) {
                 max = v;
             }
@@ -58,15 +64,14 @@ public class AberthMethod {
      */
     public static List<ComplexNumber> initRoots(Polynomial f) {
         int degree = f.getDegree();
-        BigDecimal[] bounds = getUpperLowerBounds(f);
-        BigDecimal upper = bounds[0];
-        BigDecimal lower = bounds[1];
+        setUpperLowerBounds(f);
 
         List<ComplexNumber> roots = new ArrayList<>();
         Random random = new Random();
 
         for (int i = 0; i < degree; i++) {
-            BigDecimal radius = lower.add((upper.subtract(lower)).multiply(new BigDecimal(Double.toString(random.nextDouble()), mathContext)));
+            BigDecimal radius = lowerReal.add((upperReal.subtract(lowerReal)).multiply(new BigDecimal(Double.toString(random.nextDouble()), mathContext)),
+            mathContext);
             double angle = 2 * Math.PI * random.nextDouble();
             ComplexNumber root = new ComplexNumber(radius.multiply(new BigDecimal(Double.toString(Math.cos(angle)), mathContext)),
                                                     radius.multiply(new BigDecimal(Double.toString(Math.sin(angle)), mathContext)));
@@ -82,8 +87,8 @@ public class AberthMethod {
     /**
      * Compute the roots of a given polynomial using the Aberth Method.
      *
-     * @param f a Function object representing the polynomial.
-     * @return an array with the number of iterations and the list of roots.
+     * @param f a Function object representing a simplified polynomial.
+     * @return an array with the number of iterations and the list of sorted rounded roots.
      */
     public static Object[] aberthMethod(Polynomial f) {
         List<ComplexNumber> roots = initRoots(f);
@@ -92,7 +97,7 @@ public class AberthMethod {
         int numberOfRoots = roots.size();
         Set<Integer> computedRootsIndex = new HashSet<>();
 
-        int numOfThreads = 4;
+        int numOfThreads = 1;
         int extra = 0;
         int rootsPerThread = numberOfRoots / numOfThreads;
 
@@ -125,24 +130,13 @@ public class AberthMethod {
             if (computedRootsIndex.size() >= numberOfRoots) {
                 break;
             }
+
+            // if (iteration == 50) {
+            //     System.exit(0);
+            // }
         }
 
-        // Round roots to 12 decimal places
-        ArrayList<ComplexNumber> roundedRoots = new ArrayList<>();
-        for (ComplexNumber root : roots) {
-
-            if (root.getReal().abs().compareTo(EPSILON) < 0) {
-                root = new ComplexNumber(BigDecimal.ZERO, root.getImaginary());
-            }
-
-            if (root.getImaginary().abs().compareTo(EPSILON) < 0) {
-                root = new ComplexNumber(root.getReal(), BigDecimal.ZERO);
-            } 
-
-            
-            roundedRoots.add(new ComplexNumber(root.getReal().setScale(3, RoundingMode.HALF_UP),
-                        root.getImaginary().setScale(3, RoundingMode.HALF_UP)));
-        } 
+        ArrayList<ComplexNumber> roundedRoots = roundRoots(roots);
 
         sort(roundedRoots);
 
@@ -173,7 +167,39 @@ public class AberthMethod {
         return sum;
     }
 
-    // An implementation of insertion sort to sort the rounded roots
+    // TODO: Maybe don't make a new list and rather update the current list
+    /**
+     * If the real or complex value of a root has a magnitude less than EPSILON then set it to zero.
+     * Then round the roots.
+     *
+     * @param roots a list of roots.
+     * @return list of rounded roots.
+     */
+    static ArrayList<ComplexNumber> roundRoots(List<ComplexNumber> roots) {
+        ArrayList<ComplexNumber> roundedRoots = new ArrayList<>();
+        for (ComplexNumber root : roots) {
+
+            if (root.getReal().abs().compareTo(EPSILON) < 0) {
+                root = new ComplexNumber(BigDecimal.ZERO, root.getImaginary());
+            }
+
+            if (root.getImaginary().abs().compareTo(EPSILON) < 0) {
+                root = new ComplexNumber(root.getReal(), BigDecimal.ZERO);
+            } 
+
+            
+            roundedRoots.add(new ComplexNumber(root.getReal().setScale(3, RoundingMode.HALF_UP),
+                        root.getImaginary().setScale(3, RoundingMode.HALF_UP)));
+        } 
+        return roundedRoots;
+    }
+
+    /**
+     * An implementation of insertion sort to sort the rounded roots
+     *
+     * @param roots a list of rounded roots.
+     * @return a list of the sorted rounded roots.
+     */
     static void sort(ArrayList<ComplexNumber> roots) {
         int n = roots.size();
         for (int i = 1; i < n; i++) {
@@ -191,6 +217,7 @@ public class AberthMethod {
         }
     }
 
+    // Multithreading implementation to perform one iteration of AberthMethod on all roots.
     private static class Multithreading extends Thread {
         private List<ComplexNumber> roots;
         private Polynomial function;
@@ -222,7 +249,7 @@ public class AberthMethod {
                         ComplexNumber offset = ratio.divide((new ComplexNumber(BigDecimal.ONE).subtract(
                             ratio.multiply(sumInverse(roots, r)))));
                         
-                        ComplexNumber roundedOffset = new ComplexNumber(offset.getReal().setScale(5, RoundingMode.HALF_DOWN), offset.getImaginary().setScale(5, RoundingMode.HALF_DOWN));
+                        ComplexNumber roundedOffset = new ComplexNumber(offset.getReal().setScale(5, RoundingMode.HALF_EVEN), offset.getImaginary().setScale(5, RoundingMode.HALF_DOWN));
 
                         
                         if (roundedOffset.getReal().abs().compareTo(EPSILON) < 0 && roundedOffset.getImaginary().abs().compareTo(EPSILON) < 0) {

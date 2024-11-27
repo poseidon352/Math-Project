@@ -4,7 +4,6 @@ import Expressions.Constant;
 import Expressions.Expression;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 
 import Expressions.AberthMethod;
 import Expressions.AbstractFunction;
